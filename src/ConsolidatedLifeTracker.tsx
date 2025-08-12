@@ -1,0 +1,888 @@
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import ThreeSolarView from './ThreeSolarView';
+import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2 } from 'lucide-react';
+
+const ConsolidatedLifeTracker: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'today' | 'focus' | 'review' | 'graphs' | 'settings'>('today');
+  const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [masterDocPreview, setMasterDocPreview] = useState<string>('');
+  const [rootCausesPreview, setRootCausesPreview] = useState<string>('');
+  const [faithModeEnabled, setFaithModeEnabled] = useState<boolean>(true);
+  const [sabbathMode, setSabbathMode] = useState<boolean>(false);
+  const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
+  const [selectedIntent, setSelectedIntent] = useState<'Eat/Rest' | 'Connect' | 'Decide' | null>(null);
+  const [showStuckModal, setShowStuckModal] = useState<boolean>(false);
+  const [stuckCategory, setStuckCategory] = useState<'Self' | 'Relationships' | 'Faith' | null>(null);
+  type DecisionLogItem = { id: string; prompt: string; chosen: string; reason: string; createdAt: string };
+  const [decisionLog, setDecisionLog] = useState<DecisionLogItem[]>([]);
+  const [decisionDraft, setDecisionDraft] = useState<{ prompt: string; chosen: string; reason: string }>({ prompt: '', chosen: '', reason: '' });
+  const [syncState, setSyncState] = useState<'synced' | 'pending' | 'offline'>('synced');
+  const [mood, setMood] = useState<number>(3);
+  const [energy, setEnergy] = useState<number>(3);
+  const [fadeStage, setFadeStage] = useState<1 | 2 | 3 | 4>(1);
+  const [timerSec, setTimerSec] = useState<number>(25 * 60);
+  const [timerRunning, setTimerRunning] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Fetch small previews from public docs
+    fetch('/docs/universal_daily_navigator_master_doc.md')
+      .then((r) => r.text())
+      .then((t) => setMasterDocPreview(t.split('\n').slice(0, 20).join('\n')))
+      .catch(() => setMasterDocPreview('Failed to load master doc.'));
+    fetch('/docs/root-causes.md')
+      .then((r) => r.text())
+      .then((t) => setRootCausesPreview(t.split('\n').slice(0, 20).join('\n')))
+      .catch(() => setRootCausesPreview('Failed to load root causes.'));
+  }, []);
+
+  // Sample data
+  const dailyScores: Record<string, number> = {
+    intention: 4.3,
+    integrity: 3.8,
+    care: 4.2,
+    faithfulness: 4.8,
+    energy: 7,
+    peace: 8,
+    gratitude: 9
+  };
+
+  const todayStory: Array<{ time: string; activity: string; category: string; icon: React.ComponentType<{ className?: string }> }> = [
+    { time: '7:30 AM', activity: 'Started with morning prayer and stretches', category: 'spiritual', icon: Star },
+    { time: '9:15 AM', activity: 'Called Mom about weekend family dinner', category: 'connect', icon: Phone },
+    { time: '11:30 AM', activity: 'Chose to help neighbor with groceries', category: 'care', icon: Heart },
+    { time: '12:45 PM', activity: 'Took mindful lunch break in the garden', category: 'rest', icon: Coffee },
+    { time: '2:00 PM', activity: 'Texted encouragement to struggling friend', category: 'connect', icon: Heart }
+  ];
+
+  const heartConnections: Array<{ name: string; action: string; emoji: string; days: number }> = [
+    { name: 'Mom', action: 'Called this morning', emoji: '💗', days: 0 },
+    { name: 'Sam (neighbor)', action: 'Helped with groceries', emoji: '🤝', days: 0 },
+    { name: 'Alex', action: 'Sent encouragement', emoji: '✨', days: 0 },
+    { name: 'Project Alpha', action: 'Last touch', emoji: '💼', days: 14 }
+  ];
+
+  const weeklyData = [
+    { day: 'Mon', intention: 4, integrity: 3, care: 4, faithfulness: 5 },
+    { day: 'Tue', intention: 5, integrity: 4, care: 3, faithfulness: 4 },
+    { day: 'Wed', intention: 3, integrity: 5, care: 5, faithfulness: 5 },
+    { day: 'Thu', intention: 4, integrity: 3, care: 4, faithfulness: 4 },
+    { day: 'Fri', intention: 5, integrity: 4, care: 4, faithfulness: 5 },
+    { day: 'Sat', intention: 4, integrity: 4, care: 5, faithfulness: 5 },
+    { day: 'Sun', intention: 4, integrity: 4, care: 4, faithfulness: 5 }
+  ];
+
+  const balanceData = [
+    { name: 'Eat/Rest', value: 6, total: 10, color: '#10B981' },
+    { name: 'Connect', value: 8, total: 10, color: '#8B5CF6' },
+    { name: 'Decide', value: 7, total: 10, color: '#F59E0B' }
+  ];
+
+  // Compute primary deficit (lowest ratio)
+  const primaryDeficit = balanceData
+    .map((b) => ({ name: b.name, ratio: b.value / b.total }))
+    .sort((a, b) => a.ratio - b.ratio)[0]?.name as 'Eat/Rest' | 'Connect' | 'Decide';
+
+  const nextBestActionByDeficit: Record<'Eat/Rest' | 'Connect' | 'Decide', { title: string; micro: string }> = {
+    'Eat/Rest': {
+      title: 'Drink water and stretch (2 min)',
+      micro: 'Fill bottle • 4 easy stretches'
+    },
+    Connect: {
+      title: 'Check in with someone (2 min)',
+      micro: 'Open messages • Send 1 line of encouragement'
+    },
+    Decide: {
+      title: 'Choose your one thing (1 min)',
+      micro: 'List 2 options • Circle the most loving next step'
+    }
+  };
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => setTimerSec((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [timerRunning]);
+
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const rootButtons = useMemo(() => (
+    <div className="grid grid-cols-3 gap-3">
+      <button onClick={() => { setSelectedIntent('Eat/Rest'); setShowIntentModal(true); }} className="p-4 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-100 flex flex-col items-center">
+        <Moon className="w-6 h-6 text-teal-600" />
+        <span className="mt-2 text-sm font-medium text-teal-800">Eat/Rest</span>
+      </button>
+      <button onClick={() => { setSelectedIntent('Connect'); setShowIntentModal(true); }} className="p-4 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-100 flex flex-col items-center">
+        <Users className="w-6 h-6 text-purple-600" />
+        <span className="mt-2 text-sm font-medium text-purple-800">Connect</span>
+      </button>
+      <button onClick={() => { setSelectedIntent('Decide'); setShowIntentModal(true); }} className="p-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-100 flex flex-col items-center">
+        <Compass className="w-6 h-6 text-amber-600" />
+        <span className="mt-2 text-sm font-medium text-amber-800">Decide</span>
+      </button>
+    </div>
+  ), []);
+
+  // Map pins (mind-map style)
+  type PinKind = 'you' | 'root' | 'note' | 'task' | 'person' | 'location' | 'decision';
+  type PinStatus = 'red' | 'yellow' | 'green';
+  type MapPin = {
+    id: string;
+    label: string;
+    color?: string;
+    xPct: number;
+    yPct: number;
+    kind: PinKind;
+    status?: PinStatus;
+    meta?: any;
+  };
+  const defaultPins: MapPin[] = [
+    { id: 'you', label: 'You', color: '#2563EB', xPct: 50, yPct: 50, kind: 'you' },
+    // Roots (optional)
+    { id: 'root-eat', label: 'Eat/Rest', color: '#10B981', xPct: 18, yPct: 18, kind: 'root', meta: { root: 'eatRest' } },
+    { id: 'root-connect', label: 'Connect', color: '#8B5CF6', xPct: 82, yPct: 28, kind: 'root', meta: { root: 'connect' } },
+    { id: 'root-decide', label: 'Decide', color: '#F59E0B', xPct: 35, yPct: 86, kind: 'root', meta: { root: 'decide' } },
+    // People
+    { id: 'p-mom', label: 'Mom', xPct: 30, yPct: 40, kind: 'person', status: 'green' },
+    { id: 'p-sam', label: 'Sam', xPct: 65, yPct: 35, kind: 'person', status: 'yellow' },
+    { id: 'p-alex', label: 'Alex', xPct: 55, yPct: 65, kind: 'person', status: 'red' },
+    // Tasks
+    { id: 't-water', label: 'Drink water', xPct: 78, yPct: 20, kind: 'task', status: 'green', meta: { effortMin: 2, root: 'eatRest' } },
+    { id: 't-walk', label: 'Walk 5 min', xPct: 20, yPct: 60, kind: 'task', status: 'yellow', meta: { effortMin: 5, root: 'eatRest' } },
+    { id: 't-draft', label: 'Finish draft', xPct: 58, yPct: 55, kind: 'task', status: 'red', meta: { effortMin: 25, root: 'decide' } },
+    // Notes
+    { id: 'n-idea', label: 'Idea: solar map', xPct: 40, yPct: 30, kind: 'note', status: 'yellow', meta: { body: 'Pin types, ring snapping' } },
+    { id: 'n-grocery', label: 'Groceries', xPct: 25, yPct: 72, kind: 'note', status: 'green', meta: { body: 'Milk, eggs, greens' } },
+    // Decisions
+    { id: 'd-topic', label: 'Pick blog topic', xPct: 45, yPct: 80, kind: 'decision', status: 'red' },
+  // Locations
+    { id: 'loc-home', label: 'Home', xPct: 48, yPct: 25, kind: 'location', status: 'green' },
+  ];
+  const [pins, setPins] = useState<MapPin[]>([]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState<string>('');
+  const [editKind, setEditKind] = useState<PinKind>('note');
+  const [editMeta, setEditMeta] = useState<any>({});
+  const [showAddMenu, setShowAddMenu] = useState<boolean>(false);
+  // All kinds default to gray; color is derived from status if present
+  const defaultGrey = '#6B7280';
+  const kindColors: Record<PinKind, string> = {
+    you: defaultGrey,
+    root: defaultGrey,
+    note: defaultGrey,
+    task: defaultGrey,
+    person: defaultGrey,
+    location: defaultGrey,
+    decision: defaultGrey,
+  };
+  const statusColors: Record<PinStatus, string> = {
+    red: '#EF4444',
+    yellow: '#F59E0B',
+    green: '#22C55E',
+  };
+  const legendItems = [
+    { key: 'person', label: 'People', color: defaultGrey },
+    { key: 'task', label: 'Tasks', color: defaultGrey },
+    { key: 'note', label: 'Notes', color: defaultGrey },
+    { key: 'decision', label: 'Decisions', color: defaultGrey },
+    { key: 'location', label: 'Locations', color: defaultGrey },
+  ];
+  const [zoom, setZoom] = useState<number>(1);
+  const [legendFilter, setLegendFilter] = useState<PinKind | null>(null);
+  const [solarView, setSolarView] = useState<boolean>(false);
+  const [use3D, setUse3D] = useState<boolean>(false);
+  // Orbit types are typed rings (inner→outer)
+  const orbitKinds: PinKind[] = ['person', 'task', 'note', 'decision', 'location'];
+  const layerNames = orbitKinds.map((k) => (
+    k === 'note' ? 'Notes' : k === 'task' ? 'Tasks' : k === 'person' ? 'People' : k === 'decision' ? 'Decisions' : k === 'location' ? 'Locations' : k
+  ));
+  // Radii from center in percentage points (computed by count)
+  const layerRadii = Array.from({ length: orbitKinds.length }, (_, i) => 10 + i * 7);
+  const kindToLayerIndex: Record<PinKind, number | null> = {
+    you: null,
+    root: null,
+    note: orbitKinds.indexOf('note'),
+    task: orbitKinds.indexOf('task'),
+    person: orbitKinds.indexOf('person'),
+    location: orbitKinds.indexOf('location'),
+    decision: orbitKinds.indexOf('decision'),
+  };
+  const getRingRadiusForKind = (kind: PinKind): number => {
+    const idx = kindToLayerIndex[kind];
+    if (idx === null || idx === undefined) return 0;
+    return layerRadii[idx] ?? layerRadii[0];
+  };
+  const mapRef = React.useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await panelRef.current?.requestFullscreen?.();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch {}
+  };
+  const formatLabel = (raw: string): string => {
+    const words = (raw || '').trim().split(/\s+/);
+    if (words.length <= 2) return words.join(' ');
+    return `${words[0]} ${words[1]}…`;
+  };
+
+  // Load/save pins from localStorage so refresh uses the same objects
+  useEffect(() => {
+    const saved = localStorage.getItem('udn_pins');
+    if (saved) {
+      try { setPins(JSON.parse(saved)); return; } catch {}
+    }
+    setPins(defaultPins);
+  }, []);
+
+  useEffect(() => {
+    if (pins.length > 0) {
+      localStorage.setItem('udn_pins', JSON.stringify(pins));
+    }
+  }, [pins]);
+
+  const clampPct = (v: number) => Math.max(2, Math.min(98, v));
+
+  const autoOrganizePins = () => {
+    const centerX = 50;
+    const centerY = 50;
+    const minDistance = 4; // percent units between dots
+    const iterations = 14;
+    let arranged = pins.map((p) => ({ ...p }));
+    const isAnchored = (p: MapPin) => p.kind === 'you';
+
+    for (let iter = 0; iter < iterations; iter++) {
+      for (let i = 0; i < arranged.length; i++) {
+        for (let j = i + 1; j < arranged.length; j++) {
+          const a = arranged[i];
+          const b = arranged[j];
+          // Ignore label-only overlap; we space dots
+          let dx = b.xPct - a.xPct;
+          let dy = b.yPct - a.yPct;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+          if (dist < minDistance) {
+            const push = (minDistance - dist) / 2;
+            dx /= dist; dy /= dist;
+            // Move either or both depending on anchor status
+            if (!isAnchored(a)) {
+              a.xPct = clampPct(a.xPct - dx * push);
+              a.yPct = clampPct(a.yPct - dy * push);
+            }
+            if (!isAnchored(b)) {
+              b.xPct = clampPct(b.xPct + dx * push);
+              b.yPct = clampPct(b.yPct + dy * push);
+            }
+          }
+        }
+      }
+      // Snap to rings when Solar View is active
+      if (solarView) {
+        arranged = arranged.map((p) => {
+          const r = getRingRadiusForKind(p.kind);
+          if (r > 0 && p.kind !== 'you') {
+            const angle = Math.atan2(p.yPct - centerY, p.xPct - centerX);
+            return {
+              ...p,
+              xPct: centerX + r * Math.cos(angle),
+              yPct: centerY + r * Math.sin(angle),
+            };
+          }
+          return p;
+        });
+      }
+    }
+    setPins(arranged);
+  };
+
+  useEffect(() => {
+    if (!draggingId) return;
+    const onMove = (e: MouseEvent) => {
+      if (!mapRef.current) return;
+      const rect = mapRef.current.getBoundingClientRect();
+      const xPct = clampPct(((e.clientX - rect.left) / rect.width) * 100);
+      const yPct = clampPct(((e.clientY - rect.top) / rect.height) * 100);
+      setPins((prev) => prev.map((p) => {
+        if (p.id !== draggingId) return p;
+        if (solarView) {
+          // Snap to the designated ring for this pin's kind. Prevent ring change unless kind changes.
+          const cx = 50, cy = 50;
+          const dx = xPct - cx;
+          const dy = yPct - cy;
+          const angle = Math.atan2(dy, dx);
+          const r = getRingRadiusForKind(p.kind);
+          if (r === 0) {
+            // Free (You) stays near center but allow move
+            return { ...p, xPct, yPct };
+          }
+          return { ...p, xPct: cx + r * Math.cos(angle), yPct: cy + r * Math.sin(angle) };
+        }
+        return { ...p, xPct, yPct };
+      }));
+    };
+    const onUp = () => setDraggingId(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [draggingId, solarView]);
+
+  const handleMapDoubleClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (!mapRef.current) return;
+    const rect = mapRef.current.getBoundingClientRect();
+    const xPct = clampPct(((e.clientX - rect.left) / rect.width) * 100);
+    const yPct = clampPct(((e.clientY - rect.top) / rect.height) * 100);
+    const id = Math.random().toString(36).slice(2);
+    const newPin: MapPin = { id, label: 'New', color: '#64748B', xPct, yPct, kind: 'note', status: 'yellow', meta: { body: '', status: 'yellow' } };
+    setPins((prev) => [...prev, newPin]);
+    setEditingId(id);
+    setEditKind('note');
+    setEditText('New');
+    setEditMeta({ body: '', status: 'yellow' });
+  };
+
+  const anchors = [
+    { name: 'Morning', completed: true },
+    { name: 'Midday', completed: true },
+    { name: 'Evening', completed: false },
+    { name: 'Sabbath', completed: true }
+  ];
+
+  const consistencyLeaders = [
+    { name: 'Morning stretch', streak: 6, total: 10 },
+    { name: 'Hydration check', streak: 9, total: 10 },
+    { name: 'Alex', streak: 3, total: 5 },
+    { name: 'Volunteer', streak: 2, total: 5 }
+  ];
+
+  const getScoreColor = (score: number): string => {
+    if (score >= 4) return 'text-green-500';
+    if (score >= 3) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
+  const getCategoryColor = (category: string): string => {
+    const colors: Record<string, string> = {
+      spiritual: 'bg-purple-100 text-purple-800',
+      connect: 'bg-blue-100 text-blue-800',
+      care: 'bg-green-100 text-green-800',
+      rest: 'bg-teal-100 text-teal-800',
+      work: 'bg-orange-100 text-orange-800'
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Multiple view types switcher
+  type ViewType = 'map2d' | 'solar2d' | 'solar3d' | 'list';
+  const [viewType, setViewType] = useState<ViewType>('map2d');
+
+  useEffect(() => {
+    // Keep existing toggles in sync with dropdown
+    if (viewType === 'solar3d') {
+      setUse3D(true);
+      setSolarView(true);
+    } else if (viewType === 'solar2d') {
+      setUse3D(false);
+      setSolarView(true);
+    } else {
+      setUse3D(false);
+      setSolarView(false);
+    }
+  }, [viewType]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Universal Daily Navigator</h1>
+            <span className={`text-xs px-2 py-1 rounded ${syncState === 'synced' ? 'bg-green-100 text-green-800' : syncState === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'}`}>{syncState}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Navigate life: water • call mom • choose one thing" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v22"/><path d="M5 8v8"/><path d="M19 8v8"/></svg>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            {/* View selector moved here (green box area) */}
+            <select
+              className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-gray-700"
+              value={viewType}
+              onChange={(e) => setViewType(e.target.value as ViewType)}
+              title="Visualization"
+            >
+              <option value="map2d">Map 2D</option>
+              <option value="solar2d">Solar 2D</option>
+              <option value="solar3d">Solar 3D</option>
+              <option value="list">List</option>
+            </select>
+            <span className="text-xs text-gray-500">Drag pins • Double‑click to add/edit • Snap to rings in Solar View</span>
+          </div>
+        </div>
+
+      {/* Global Edit Modal */}
+      {editingId && (() => {
+        const p = pins.find(pp => pp.id === editingId);
+        if (!p) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setEditingId(null)} />
+            <div className="relative z-10 bg-white rounded-xl shadow-xl p-4 w-[320px] sm:w-[420px]">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <select className="border rounded px-2 py-1 text-xs" value={editKind} onChange={(e) => setEditKind(e.target.value as any)}>
+                    <option value="note">Note</option>
+                    <option value="task">Task</option>
+                    <option value="person">Person</option>
+                    <option value="location">Location</option>
+                    <option value="decision">Decision</option>
+                  </select>
+                  <input className="flex-1 border rounded px-2 py-1 text-xs" value={editText} onChange={(e) => setEditText(e.target.value)} placeholder="Label" />
+                  <span className="w-4 h-4 rounded-full inline-block" style={{ backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }}></span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <span>Status:</span>
+                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'red' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'red'}))}>🔴</button>
+                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'yellow'}))}>🟡</button>
+                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'green' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'green'}))}>🟢</button>
+                </div>
+                {editKind === 'note' && (
+                  <textarea className="border rounded px-2 py-1 text-xs" rows={2} placeholder="Body"
+                    value={editMeta.body ?? ''}
+                    onChange={(e) => setEditMeta((m: any) => ({ ...m, body: e.target.value }))}
+                  />
+                )}
+                {editKind === 'task' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <input className="border rounded px-2 py-1 text-xs" placeholder="Effort (min)"
+                      value={editMeta.effortMin ?? ''}
+                      onChange={(e) => setEditMeta((m: any) => ({ ...m, effortMin: e.target.value }))}
+                    />
+                    <select className="border rounded px-2 py-1 text-xs" value={editMeta.root ?? 'eatRest'} onChange={(e) => setEditMeta((m: any) => ({ ...m, root: e.target.value }))}>
+                      <option value="eatRest">Eat/Rest</option>
+                      <option value="connect">Connect</option>
+                      <option value="decide">Decide</option>
+                    </select>
+                  </div>
+                )}
+                {editKind === 'person' && (
+                  <input className="border rounded px-2 py-1 text-xs" placeholder="Phone/Handle"
+                    value={editMeta.handle ?? ''}
+                    onChange={(e) => setEditMeta((m: any) => ({ ...m, handle: e.target.value }))}
+                  />
+                )}
+                {editKind === 'location' && (
+                  <input className="border rounded px-2 py-1 text-xs" placeholder="Location"
+                    value={editMeta.location ?? ''}
+                    onChange={(e) => setEditMeta((m: any) => ({ ...m, location: e.target.value }))}
+                  />
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button className="text-xs px-2 py-1" onClick={() => setEditingId(null)}>Cancel</button>
+                  <button className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded" onClick={() => { setPins((prev) => prev.filter((x) => x.id !== p!.id)); setEditingId(null); }}>Delete</button>
+                  <button className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
+                    onClick={() => {
+                      setPins((prev) => prev.map((x) => {
+                        if (x.id !== p!.id) return x;
+                        let next: any = { ...x, label: editText, kind: editKind, meta: editMeta };
+                        if (editMeta?.status) next.status = editMeta.status;
+                        if (solarView && x.kind !== editKind) {
+                          const cx = 50, cy = 50;
+                          const angle = Math.atan2(x.yPct - cy, x.xPct - cx);
+                          const r = getRingRadiusForKind(editKind);
+                          if (r > 0) {
+                            next.xPct = cx + r * Math.cos(angle);
+                            next.yPct = cy + r * Math.sin(angle);
+                          }
+                        }
+                        return next;
+                      }));
+                      setEditingId(null);
+                    }}
+                  >Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+        {/* Today Tab */}
+        {activeTab === 'today' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Visualization Panel (center stage) */}
+            <div ref={panelRef} className="lg:col-span-2 bg-white rounded-xl p-0 shadow-sm overflow-hidden relative">
+              <button
+                className="absolute top-3 right-3 z-10 bg-white/80 hover:bg-white text-gray-700 border border-gray-200 rounded-md p-1 shadow"
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+              {viewType === 'solar3d' ? (
+                <ThreeSolarView
+                  pins={pins as any}
+                  layerRadii={layerRadii}
+                  layerNames={layerNames}
+                  kindColors={kindColors}
+                  statusColors={statusColors as any}
+                  defaultGrey={defaultGrey}
+                  kindToLayerIndex={kindToLayerIndex as any}
+                  ringRotations={layerRadii.map((_, i) => [i * 0.05, i * 0.03, i * 0.02])}
+                />
+              ) : viewType === 'list' ? (
+                <div className="p-4">
+                  {(['person','task','note','decision','location'] as const).map((k) => (
+                    <div key={k} className="mb-4">
+                      <div className="text-sm text-gray-600 mb-2 capitalize">{k}</div>
+                      <div className="space-y-2">
+                        {pins.filter(p => p.kind === k).map((p) => (
+                          <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.status ? statusColors[p.status] : defaultGrey }}></span>
+                              <span className="text-sm text-gray-800">{p.label}</span>
+                            </div>
+                            <button className="text-xs text-blue-600" onClick={() => { setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta||{}), status: (p as any).status }); }}>Edit</button>
+                          </div>
+                        ))}
+                        {pins.filter(p => p.kind === k).length === 0 && (
+                          <div className="text-xs text-gray-500">No items</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+              <>
+              <div ref={mapRef} onDoubleClick={handleMapDoubleClick} className="relative h-72 sm:h-80 bg-gray-100 cursor-crosshair select-none overflow-hidden">
+                {/* Grid background */}
+                <div className="absolute inset-0 origin-center" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
+                  <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                </div>
+                {/* Solar rings */}
+                {solarView && (
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ transform: `scale(${zoom})` }}>
+                    <defs>
+                      {layerRadii.map((r, i) => (
+                        <path key={`path-${i}`} id={`orbit-${i}`} d={`M 50 50 m -${r}, 0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`} />
+                      ))}
+                    </defs>
+                    {layerRadii.map((r, i) => (
+                      <g key={i}>
+                        <circle cx="50" cy="50" r={r} stroke="#E5E7EB" strokeDasharray="2 2" strokeWidth="0.6" fill="none" />
+                        <text fontSize="3" fill="#64748B">
+                          <textPath href={`#orbit-${i}`} startOffset="25%" textAnchor="middle">{layerNames[i]}</textPath>
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                )}
+                {/* Draggable pins styled as dot + bubble label */}
+                {pins.map((p) => (
+                  <div
+                    key={p.id}
+                    className="absolute group"
+                    style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: `translate(-50%, -50%) scale(${zoom})` }}
+                    onMouseDown={() => setDraggingId(p.id)}
+                    onDoubleClick={(e) => { e.stopPropagation(); setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta || {}), status: (p as any).status }); }}
+                  >
+                    <div className="relative">
+                      {/* Dot centered exactly at the pin (on the orbit) */}
+                      <span
+                        className="absolute w-3 h-3 rounded-full"
+                        style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: p.status ? statusColors[p.status] : defaultGrey }}
+                      />
+                      {/* Label offset to the right but vertically centered with the dot */}
+                      <div
+                        className="absolute px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow"
+                        style={{
+                          left: 0,
+                          top: 0,
+                          transform: `translate(${p.xPct < 50 ? '-12px' : '12px'}, -50%)${p.xPct < 50 ? ' translateX(-100%)' : ''}`,
+                        }}
+                      >
+                        {formatLabel(p.label)}
+                      </div>
+                    </div>
+                    {/* inline editor removed; we show a centered modal instead */}
+                  </div>
+                ))}
+                {/* Curved connections (example: connect root pins to You) */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  {pins.filter((p) => p.kind === 'root').map((p) => {
+                    const sx = `${50}%`; const sy = `${50}%`;
+                    const tx = `${p.xPct}%`; const ty = `${p.yPct}%`;
+                    const c1x = `${(50 + p.xPct) / 2}%`; const c1y = `${50}%`;
+                    const c2x = `${(50 + p.xPct) / 2}%`; const c2y = `${p.yPct}%`;
+                    return (
+                      <path key={`edge-${p.id}`} d={`M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`} stroke="#94A3B8" strokeWidth="2" fill="none" />
+                    );
+                  })}
+                </svg>
+                {/* (moved) zoom controls now live next to legend */}
+              </div>
+              {/* Legend under the map (object types) */}
+              <div className="p-4 border-t">
+                <div className="flex flex-wrap items-center gap-3">
+                  {legendItems.map((item) => (
+                    <button
+                      key={item.key}
+                      className={`px-3 py-2 rounded-full text-white shadow text-sm ${legendFilter === (item.key as any) ? 'ring-2 ring-blue-200' : ''}`}
+                      style={{ backgroundColor: item.color }}
+                      onClick={() => setLegendFilter((prev) => prev === (item.key as any) ? null : (item.key as any))}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                  <div className="ml-auto bg-white/90 rounded shadow flex items-center">
+                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={autoOrganizePins}>Auto</button>
+                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
+                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
+                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom(1)}>Reset</button>
+                  </div>
+                </div>
+                {legendFilter && (
+                  <div className="mt-4 bg-gray-50 rounded-xl p-4">
+                    <div className="text-sm text-gray-600 mb-2">{legendItems.find(i => (i.key as any) === legendFilter)?.label}</div>
+                    <div className="space-y-2 max-h-40 overflow-auto pr-2">
+                      {pins.filter(p => p.kind === legendFilter).map((p) => (
+                        <div key={p.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: kindColors[p.kind] }}></span>
+                            <span className="text-sm text-gray-800">{p.label}</span>
+                          </div>
+                          <span className="text-xs text-gray-400">({Math.round(p.xPct)}%, {Math.round(p.yPct)}%)</span>
+                        </div>
+                      ))}
+                      {pins.filter(p => p.kind === legendFilter).length === 0 && (
+                        <div className="text-xs text-gray-500">No items yet</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              </>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className={`space-y-4 ${sabbathMode ? 'opacity-80 saturate-75' : ''}`}>
+              {/* Community-first: Who needs love today? */}
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold mb-3">Who needs love today?</h3>
+                <div className="space-y-2">
+                  {heartConnections
+                    .slice()
+                    .sort((a, b) => b.days - a.days)
+                    .filter((c) => c.days > 0)
+                    .slice(0, 3)
+                    .map((c, i) => (
+                      <div key={i} className={`flex items-center justify-between p-3 rounded ${c.days > 7 ? 'bg-red-50' : 'bg-gray-50'}`}>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg">{c.emoji}</span>
+                          <div>
+                            <div className="font-medium">{c.name}</div>
+                            <div className="text-xs text-gray-500">{c.days} days since last touch</div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Call</button>
+                          <button className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Text</button>
+                        </div>
+                      </div>
+                  ))}
+                  {heartConnections.every((c) => c.days === 0) && (
+                    <div className="text-sm text-gray-600">All caught up. Consider a quick gratitude note.</div>
+                  )}
+                </div>
+              </div>
+               {/* Next Best Action */}
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="font-semibold mb-3">Next</h3>
+              <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900">{nextBestActionByDeficit[primaryDeficit].title}</h4>
+                  <p className="text-sm text-blue-700 mt-1">Micro-steps: {nextBestActionByDeficit[primaryDeficit].micro}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex gap-2 text-xs">
+                      <span className="px-2 py-1 bg-white/70 rounded">Due soon</span>
+                      <span className="px-2 py-1 bg-white/70 rounded">Primary deficit: {primaryDeficit}</span>
+                      <span className="px-2 py-1 bg-white/70 rounded">Short win</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium">25:00</span>
+                    </div>
+                  </div>
+                  <button className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    Start
+                  </button>
+                </div>
+              </div>
+
+              {/* Daily Scores */}
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold mb-4">Daily Scores</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Energy</span>
+                    <span className="font-bold text-xl">{dailyScores.energy}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Peace</span>
+                    <span className="font-bold text-xl">{dailyScores.peace}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Gratitude</span>
+                    <span className="font-bold text-xl">{dailyScores.gratitude}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Today's Story */}
+            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
+              <h3 className="font-semibold mb-4">Today's Story</h3>
+              <div className="space-y-4">
+                {todayStory.map((item, index) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div className={`p-2 rounded-full ${getCategoryColor(item.category)}`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-500">{item.time}</div>
+                        <div className="text-gray-900">{item.activity}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Anchors (faith mode) */}
+            {faithModeEnabled && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h3 className="font-semibold mb-4">Daily Anchors</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {anchors.map((anchor, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      {anchor.completed ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-gray-300" />
+                      )}
+                      <span className={`text-sm ${anchor.completed ? 'text-gray-900' : 'text-gray-500'}`}>
+                        {anchor.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        
+
+        
+
+        
+
+        
+
+        {/* Intent Quick Add Modal */}
+        {showIntentModal && selectedIntent && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+              <h3 className="font-semibold mb-2">Quick add — {selectedIntent}</h3>
+              <input className="w-full border rounded px-3 py-2 text-sm" placeholder={`What is a 2–5 min step for ${selectedIntent}?`} />
+              <div className="flex justify-end gap-2 mt-4">
+                <button className="px-3 py-2 text-sm" onClick={() => setShowIntentModal(false)}>Cancel</button>
+                <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded" onClick={() => setShowIntentModal(false)}>Save</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stuck Moment Modal */}
+        {showStuckModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+              <h3 className="font-semibold mb-3">Feeling stuck</h3>
+              {!stuckCategory ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {(['Self', 'Relationships', 'Faith'] as const).map((c) => (
+                    <button key={c} className="px-3 py-2 bg-gray-100 rounded text-sm hover:bg-gray-200" onClick={() => setStuckCategory(c)}>{c}</button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">Category: {stuckCategory}</div>
+                  <div className="space-y-2">
+                    {(
+                      stuckCategory === 'Self' ? [
+                        'Stand up, sip water, one deep breath',
+                        'Set a 5‑min timer and do the first tiny step',
+                        'Write the next sentence only'
+                      ] : stuckCategory === 'Relationships' ? [
+                        'Send a 1‑line check‑in to someone you care about',
+                        'Draft the hard message; send a kind first line',
+                        'Schedule a 10‑min call'
+                      ] : [
+                        'Two‑minute quiet: “Here I am.”',
+                        'Read one verse; pick one word to carry',
+                        'Offer gratitude for one specific thing'
+                      ]
+                    ).map((s, i) => (
+                      <div key={i} className="p-3 bg-gray-50 rounded text-sm">• {s}</div>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button className="px-3 py-2 text-sm" onClick={() => { setShowStuckModal(false); setStuckCategory(null); }}>Close</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Analytics section is currently disabled in this build. */}
+
+        {/* Footer (mood/energy) */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur p-3 border-t">
+          <div className="max-w-7xl mx-auto flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-600">Mood</span>
+              <input type="range" min={0} max={5} value={mood} onChange={(e) => setMood(Number(e.target.value))} />
+              <span className="text-xs">{mood}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-600">Energy</span>
+              <input type="range" min={0} max={5} value={energy} onChange={(e) => setEnergy(Number(e.target.value))} />
+              <span className="text-xs">{energy}</span>
+            </div>
+            <button className="ml-auto w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow flex items-center justify-center">
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ConsolidatedLifeTracker;
+
