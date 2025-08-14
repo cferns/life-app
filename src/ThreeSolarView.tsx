@@ -14,6 +14,7 @@ type Props = {
   defaultGrey: string;
   ringRotations?: Array<[number, number, number]>; // radians per ring (x,y,z)
   kindToLayerIndex?: Record<string, number | null>;
+  isFullscreen?: boolean;
 };
 
 const Ring: React.FC<{ radius: number; rotation?: [number, number, number] }> = ({ radius, rotation }) => {
@@ -47,9 +48,9 @@ const PinSphere: React.FC<{ x: number; y: number; z?: number; color: string; lab
   );
 };
 
-const ThreeSolarView: React.FC<Props> = ({ pins, layerRadii, kindColors, statusColors, defaultGrey, ringRotations = [], kindToLayerIndex = {} }) => {
+const ThreeSolarView: React.FC<Props> = ({ pins, layerRadii, kindColors, statusColors, defaultGrey, ringRotations = [], kindToLayerIndex = {}, isFullscreen }) => {
   return (
-    <div className="h-80">
+    <div className="w-full" style={{ height: isFullscreen ? '100vh' : '20rem' }}>
       <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 4, 5]} intensity={0.6} />

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import ThreeSolarView from './ThreeSolarView';
-import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2 } from 'lucide-react';
+import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check } from 'lucide-react';
 
 const ConsolidatedLifeTracker: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'today' | 'focus' | 'review' | 'graphs' | 'settings'>('today');
@@ -192,7 +192,10 @@ const ConsolidatedLifeTracker: React.FC = () => {
     { key: 'location', label: 'Locations', color: defaultGrey },
   ];
   const [zoom, setZoom] = useState<number>(1);
-  const [legendFilter, setLegendFilter] = useState<PinKind | null>(null);
+  const [legendFilter, setLegendFilter] = useState<Set<PinKind>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<Set<PinStatus>>(new Set());
+  type View2Mode = 'none' | 'map2d' | 'solar2d' | 'list' | 'avgday';
+  const [view2Mode, setView2Mode] = useState<View2Mode>('none');
   const [solarView, setSolarView] = useState<boolean>(false);
   const [use3D, setUse3D] = useState<boolean>(false);
   // Orbit types are typed rings (inner→outer)
@@ -217,6 +220,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
     return layerRadii[idx] ?? layerRadii[0];
   };
   const mapRef = React.useRef<HTMLDivElement | null>(null);
+  const mapRef2 = React.useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const toggleFullscreen = async () => {
@@ -230,10 +234,158 @@ const ConsolidatedLifeTracker: React.FC = () => {
       }
     } catch {}
   };
+
+  useEffect(() => {
+    const onFullChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullChange);
+    return () => document.removeEventListener('fullscreenchange', onFullChange);
+  }, []);
   const formatLabel = (raw: string): string => {
     const words = (raw || '').trim().split(/\s+/);
     if (words.length <= 2) return words.join(' ');
     return `${words[0]} ${words[1]}…`;
+  };
+  const minutesToTime = (min: number): string => {
+    const m = Math.max(0, Math.min(1439, Math.round(min)));
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    const hh12 = ((h + 11) % 12) + 1;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    return `${hh12}:${mm.toString().padStart(2, '0')} ${ampm}`;
+  };
+  // Avg-day drag state
+  const avgRef1 = useRef<HTMLDivElement | null>(null);
+  const avgRef2 = useRef<HTMLDivElement | null>(null);
+  const [dragAvg, setDragAvg] = useState<{ id: string; offset: number; which: 'v1' | 'v2' } | null>(null);
+  // Quick add (timeline)
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickStartMin, setQuickStartMin] = useState(9 * 60);
+  const [quickDurationMin, setQuickDurationMin] = useState(30);
+  useEffect(() => {
+    if (!dragAvg) return;
+    const onMove = (e: MouseEvent) => {
+      const ref = dragAvg.which === 'v1' ? avgRef1.current : avgRef2.current;
+      if (!ref) return;
+      const rect = ref.getBoundingClientRect();
+      const ratio = (e.clientY - rect.top) / rect.height; // vertical timeline
+      const minutes = Math.max(0, Math.min(1440, Math.round(ratio * 1440))) - dragAvg.offset;
+      setPins((prev) => prev.map((p) => {
+        if (p.id !== dragAvg.id) return p;
+        const meta = { ...(p as any).meta };
+        const dur = Math.max(0, meta.avgDurationMin ?? 30);
+        meta.avgStartMin = Math.max(0, Math.min(1440 - dur, minutes));
+        return { ...p, meta } as any;
+      }));
+    };
+    const onUp = () => setDragAvg(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [dragAvg]);
+
+  const renderAvgDayTimeline = (which: 'v1' | 'v2') => {
+    const containerRef = which === 'v1' ? avgRef1 : avgRef2;
+    type Block = { id: string; label: string; start: number; end: number };
+    let items: Block[] = pins
+      .filter((p) => p.kind === 'task' && (p as any).meta?.avgStartMin != null)
+      .map((p) => {
+        const start = Number((p as any).meta.avgStartMin) || 0;
+        const dur = Number((p as any).meta.avgDurationMin) || 30;
+        return { id: p.id, label: p.label, start, end: Math.min(1440, start + dur) };
+      })
+      .sort((a, b) => a.start - b.start);
+    // Fallback demo if no tasks tagged yet
+    if (items.length === 0) {
+      const demo = pins.filter(p => p.kind === 'task').slice(0, 6);
+      items = demo.map((p, i) => {
+        const start = 8 * 60 + i * 45; // from 8:00AM every 45m
+        const dur = 30;
+        return { id: p.id, label: p.label, start, end: Math.min(1440, start + dur) };
+      });
+    }
+    // lane assignment to avoid overlaps
+    const lanes: Block[][] = [];
+    for (const it of items) {
+      let placed = false;
+      for (const lane of lanes) {
+        if (lane.length === 0 || lane[lane.length - 1].end <= it.start) {
+          lane.push(it); placed = true; break;
+        }
+      }
+      if (!placed) lanes.push([it]);
+    }
+    const tickHours = [6, 9, 12, 15, 18, 21];
+    return (
+      <div
+        ref={containerRef}
+        className="relative w-full bg-white rounded-lg border p-3"
+        style={{ height: 400 }}
+        onDoubleClick={(e) => {
+          const ref = containerRef.current; if (!ref) return;
+          const rect = ref.getBoundingClientRect();
+          const ratio = (e.clientY - rect.top) / rect.height;
+          const start = Math.max(0, Math.min(1440, Math.round(ratio * 1440)));
+          setQuickAddOpen(true);
+          setQuickTitle('');
+          setQuickStartMin(start);
+          setQuickDurationMin(30);
+        }}
+      >
+        {/* Hour ticks horizontally across */}
+        <div className="absolute inset-3">
+          {tickHours.map((h) => {
+            const top = (h / 24) * 100;
+            return (
+              <div key={h} className="absolute left-0 right-0" style={{ top: `${top}%` }}>
+                <div className="w-full h-px bg-gray-200"></div>
+                <div className="absolute -left-1 text-xs -translate-y-1/2 text-gray-500">{minutesToTime(h * 60)}</div>
+              </div>
+            );
+          })}
+          {/* Lanes as columns */}
+          {lanes.map((lane, li) => {
+            const laneWidth = 100 / Math.max(1, lanes.length);
+            const left = li * laneWidth;
+            return (
+              <div key={li} className="absolute" style={{ left: `${left}%`, width: `${laneWidth}%`, top: 0, bottom: 0 }}>
+                {lane.map((b) => {
+                  const top = (b.start / 1440) * 100;
+                  const height = ((b.end - b.start) / 1440) * 100;
+                  return (
+                    <div
+                      key={b.id}
+                      className="absolute rounded-md bg-blue-100 border border-blue-200 flex items-center justify-center px-2 cursor-grab active:cursor-grabbing"
+                      style={{ top: `${top}%`, height: `${height}%`, left: '10%', right: '10%' }}
+                      onMouseDown={(e) => {
+                        const p = pins.find((x) => x.id === b.id)!;
+                        const start = Number((p as any).meta?.avgStartMin) || 0;
+                        const ref = containerRef.current;
+                        if (!ref) return;
+                        const rect = ref.getBoundingClientRect();
+                        const ratio = (e.clientY - rect.top) / rect.height;
+                        const cursorMin = Math.round(ratio * 1440);
+                        setDragAvg({ id: b.id, offset: cursorMin - start, which });
+                      }}
+                      onDoubleClick={() => {
+                        setEditingId(b.id);
+                        const p = pins.find((x) => x.id === b.id)!;
+                        setEditText(p.label); setEditKind(p.kind as any); setEditMeta({ ...(p as any).meta, status: (p as any).status });
+                      }}
+                    >
+                      <div className="text-[11px] text-blue-900 text-center leading-tight">
+                        <div>{minutesToTime(b.start)}</div>
+                        <div className="truncate max-w-[90%] mx-auto">{b.label}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Load/save pins from localStorage so refresh uses the same objects
@@ -384,7 +536,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
   };
 
   // Multiple view types switcher
-  type ViewType = 'map2d' | 'solar2d' | 'solar3d' | 'list';
+  type ViewType = 'map2d' | 'solar2d' | 'solar3d' | 'list' | 'avgday';
   const [viewType, setViewType] = useState<ViewType>('map2d');
 
   useEffect(() => {
@@ -402,34 +554,25 @@ const ConsolidatedLifeTracker: React.FC = () => {
   }, [viewType]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-0">
+      <div className="max-w-7xl mx-auto space-y-6 px-6 sm:px-9 pt-6 sm:pt-8">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-3 sm:p-4 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Universal Daily Navigator</h1>
-            <span className={`text-xs px-2 py-1 rounded ${syncState === 'synced' ? 'bg-green-100 text-green-800' : syncState === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'}`}>{syncState}</span>
+            <h1 className="text-3xl font-bold text-gray-900">Daily Navigator</h1>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs px-2 py-1 rounded ${syncState === 'synced' ? 'bg-green-100 text-green-800' : syncState === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'}`}>{syncState}</span>
+              <button className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200" aria-label="Profile">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-gray-500"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Navigate life: water • call mom • choose one thing" />
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v22"/><path d="M5 8v8"/><path d="M19 8v8"/></svg>
           </div>
-          <div className="mt-2 flex items-center gap-2">
-            {/* View selector moved here (green box area) */}
-            <select
-              className="text-xs bg-white border border-gray-200 rounded-md px-2 py-1 text-gray-700"
-              value={viewType}
-              onChange={(e) => setViewType(e.target.value as ViewType)}
-              title="Visualization"
-            >
-              <option value="map2d">Map 2D</option>
-              <option value="solar2d">Solar 2D</option>
-              <option value="solar3d">Solar 3D</option>
-              <option value="list">List</option>
-            </select>
-            <span className="text-xs text-gray-500">Drag pins • Double‑click to add/edit • Snap to rings in Solar View</span>
-          </div>
+          {/* (compact) no extra controls row here per design */}
         </div>
 
       {/* Global Edit Modal */}
@@ -475,6 +618,18 @@ const ConsolidatedLifeTracker: React.FC = () => {
                       <option value="connect">Connect</option>
                       <option value="decide">Decide</option>
                     </select>
+                    <input className="border rounded px-2 py-1 text-xs col-span-2" placeholder="Avg day start (min from 12:00 AM)"
+                      value={editMeta.avgStartMin ?? ''}
+                      onChange={(e) => setEditMeta((m: any) => ({ ...m, avgStartMin: Number(e.target.value) }))}
+                    />
+                    <input className="border rounded px-2 py-1 text-xs col-span-2" placeholder="Avg duration (min)"
+                      value={editMeta.avgDurationMin ?? ''}
+                      onChange={(e) => setEditMeta((m: any) => ({ ...m, avgDurationMin: Number(e.target.value) }))}
+                    />
+                    <label className="flex items-center gap-2 text-xs col-span-2 text-gray-600">
+                      <input type="checkbox" checked={!!editMeta.recurring} onChange={(e)=> setEditMeta((m:any)=> ({...m, recurring: e.target.checked}))} />
+                      <span>Recurring</span>
+                    </label>
                   </div>
                 )}
                 {editKind === 'person' && (
@@ -523,14 +678,64 @@ const ConsolidatedLifeTracker: React.FC = () => {
         {activeTab === 'today' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Visualization Panel (center stage) */}
-            <div ref={panelRef} className="lg:col-span-2 bg-white rounded-xl p-0 shadow-sm overflow-hidden relative">
-              <button
-                className="absolute top-3 right-3 z-10 bg-white/80 hover:bg-white text-gray-700 border border-gray-200 rounded-md p-1 shadow"
-                onClick={toggleFullscreen}
-                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </button>
+            <div ref={panelRef} className="lg:col-span-2 bg-white rounded-2xl p-0 shadow-sm overflow-hidden relative border border-gray-200">
+              {isFullscreen && (
+                <div className="absolute top-3 left-3 z-10">
+                  <select
+                    className="text-xs bg-white/90 border border-gray-200 rounded-md px-2 py-1 text-gray-700 shadow"
+                    value={viewType}
+                    onChange={(e) => setViewType(e.target.value as ViewType)}
+                    title="Visualization"
+                  >
+                    <option value="map2d">Map 2D</option>
+                    <option value="solar2d">Solar 2D</option>
+                    <option value="solar3d">Solar 3D</option>
+                    <option value="list">List</option>
+                  </select>
+                </div>
+              )}
+              {/* Map card header row (selector left, light controls right) */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-3 border-b">
+                <select
+                  className="text-sm bg-white border border-gray-200 rounded-xl px-3 py-1 text-gray-700 shadow-sm"
+                  value={viewType}
+                  onChange={(e) => setViewType(e.target.value as ViewType)}
+                  title="Visualization"
+                >
+                  <option value="map2d">Map 2D</option>
+                  <option value="solar2d">Solar 2D</option>
+                  <option value="solar3d">Solar 3D</option>
+                  <option value="list">List</option>
+                  <option value="avgday">Timeline</option>
+                </select>
+                <div className="flex items-center gap-6 rounded-xl border border-gray-200 bg-white px-4 py-1 shadow-sm">
+                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={autoOrganizePins}>Auto</button>
+                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
+                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
+                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom(1)}>Reset</button>
+                </div>
+              </div>
+              {isFullscreen && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-white/80 backdrop-blur rounded-full px-4 py-2 shadow flex items-center gap-3">
+                  <span className="text-sm text-gray-700">Attention needed:</span>
+                  {([['red','#EF4444'], ['yellow','#F59E0B'], ['green','#22C55E']] as const).map(([key, color]) => {
+                    const selected = statusFilter.has(key as PinStatus);
+                    return (
+                      <button
+                        key={key}
+                        className={`w-10 h-6 rounded-full border flex items-center justify-center relative ${selected ? 'ring-2 ring-blue-200' : ''}`}
+                        style={{ background: '#ffffff', borderColor: '#e5e7eb' }}
+                        onClick={() => setStatusFilter(prev => { const next = new Set(prev); if (next.has(key as PinStatus)) next.delete(key as PinStatus); else next.add(key as PinStatus); return next; })}
+                        aria-label={`Filter ${key}`}
+                      >
+                        <span className="w-6 h-3 rounded-full" style={{ backgroundColor: color, opacity: selected ? 1 : 0.3 }}></span>
+                        {selected && <Check className="absolute right-1 top-1 text-gray-700" size={12} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Fullscreen toggle now sits inside the map area to avoid overlapping the header controls */}
               {viewType === 'solar3d' ? (
                 <ThreeSolarView
                   pins={pins as any}
@@ -541,6 +746,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
                   defaultGrey={defaultGrey}
                   kindToLayerIndex={kindToLayerIndex as any}
                   ringRotations={layerRadii.map((_, i) => [i * 0.05, i * 0.03, i * 0.02])}
+                  isFullscreen={isFullscreen}
                 />
               ) : viewType === 'list' ? (
                 <div className="p-4">
@@ -548,7 +754,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
                     <div key={k} className="mb-4">
                       <div className="text-sm text-gray-600 mb-2 capitalize">{k}</div>
                       <div className="space-y-2">
-                        {pins.filter(p => p.kind === k).map((p) => (
+                        {pins.filter(p => legendFilter.size === 0 ? p.kind === k : (legendFilter as Set<PinKind>).has(p.kind)).map((p) => (
                           <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                             <div className="flex items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.status ? statusColors[p.status] : defaultGrey }}></span>
@@ -564,13 +770,33 @@ const ConsolidatedLifeTracker: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              ) : viewType === 'avgday' ? (
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">Timeline (drag blocks to adjust start; double‑click to edit)</div>
+                    <div className="text-xs text-gray-600 flex items-center gap-2">
+                      <span>Range:</span>
+                      {(['day','week','month','year'] as const).map(r => (
+                        <button key={r} className={`px-2 py-1 rounded border ${'day'===r ? 'bg-gray-100' : ''}`} disabled>{r}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {renderAvgDayTimeline('v1')}
+                </div>
               ) : (
               <>
-              <div ref={mapRef} onDoubleClick={handleMapDoubleClick} className="relative h-72 sm:h-80 bg-gray-100 cursor-crosshair select-none overflow-hidden">
+              <div ref={mapRef} onDoubleClick={handleMapDoubleClick} className={`relative bg-gray-100 cursor-crosshair select-none overflow-hidden border-t border-gray-200`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem' }}>
                 {/* Grid background */}
                 <div className="absolute inset-0 origin-center" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
                   <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
                 </div>
+                <button
+                  className="absolute top-3 right-3 z-10 bg-white border border-gray-200 rounded-xl w-9 h-9 shadow-sm hover:bg-gray-50 flex items-center justify-center"
+                  onClick={toggleFullscreen}
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
                 {/* Solar rings */}
                 {solarView && (
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ transform: `scale(${zoom})` }}>
@@ -590,7 +816,9 @@ const ConsolidatedLifeTracker: React.FC = () => {
                   </svg>
                 )}
                 {/* Draggable pins styled as dot + bubble label */}
-                {pins.map((p) => (
+                {pins
+                  .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
+                  .map((p) => (
                   <div
                     key={p.id}
                     className="absolute group"
@@ -633,54 +861,196 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 </svg>
                 {/* (moved) zoom controls now live next to legend */}
               </div>
-              {/* Legend under the map (object types) */}
-              <div className="p-4 border-t">
-                <div className="flex flex-wrap items-center gap-3">
-                  {legendItems.map((item) => (
+              {/* Legend and secondary view moved OUTSIDE of the main visualization card */}
+              {quickAddOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/30" onClick={() => setQuickAddOpen(false)} />
+                  <div className="relative z-10 bg-white rounded-xl shadow-xl p-4 w-[360px]">
+                    <div className="text-sm font-medium mb-2">Quick add task</div>
+                    <input className="w-full border rounded px-2 py-1 text-sm mb-2" placeholder="Title" value={quickTitle} onChange={(e)=>setQuickTitle(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+                      <div>
+                        <div className="text-gray-600 mb-1">Start</div>
+                        <input className="w-full border rounded px-2 py-1" value={quickStartMin} onChange={(e)=>setQuickStartMin(Number(e.target.value)||0)} />
+                      </div>
+                      <div>
+                        <div className="text-gray-600 mb-1">Duration (min)</div>
+                        <input className="w-full border rounded px-2 py-1" value={quickDurationMin} onChange={(e)=>setQuickDurationMin(Number(e.target.value)||30)} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mb-3">
+                      {[15,25,30,45,60].map(d=> (
+                        <button key={d} className={`px-2 py-1 rounded border text-xs ${quickDurationMin===d?'bg-gray-100':''}`} onClick={()=>setQuickDurationMin(d)}>{d}m</button>
+                      ))}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button className="text-sm px-2 py-1" onClick={()=> setQuickAddOpen(false)}>Cancel</button>
+                      <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded" onClick={()=>{
+                        const id = Math.random().toString(36).slice(2);
+                        const newPin: any = { id, label: quickTitle || 'New task', color: '#64748B', xPct: 50, yPct: 50, kind: 'task', status: 'yellow', meta: { avgStartMin: quickStartMin, avgDurationMin: quickDurationMin } };
+                        setPins((prev)=>[...prev, newPin]);
+                        setQuickAddOpen(false);
+                        setEditingId(id); setEditKind('task'); setEditText(newPin.label); setEditMeta(newPin.meta);
+                      }}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              </>
+              )}
+            </div>
+
+            {/* Legend card (separate from main visualization) */}
+            <div className="lg:col-span-2 bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+              <div className="text-lg font-medium mb-2">Legend</div>
+              <div className="flex items-center gap-3 flex-nowrap overflow-x-auto pb-2">
+                {legendItems.map((item) => {
+                  const selected = legendFilter.has(item.key as any);
+                  return (
                     <button
                       key={item.key}
-                      className={`px-3 py-2 rounded-full text-white shadow text-sm ${legendFilter === (item.key as any) ? 'ring-2 ring-blue-200' : ''}`}
-                      style={{ backgroundColor: item.color }}
-                      onClick={() => setLegendFilter((prev) => prev === (item.key as any) ? null : (item.key as any))}
+                      className={`shrink-0 px-3 py-2 rounded-full shadow text-sm transition ${selected ? 'ring-2 ring-blue-200' : ''}`}
+                      style={{
+                        backgroundColor: selected ? item.color : '#ffffff',
+                        color: selected ? '#ffffff' : '#4b5563',
+                        border: selected ? 'none' : '1px solid #e5e7eb'
+                      }}
+                      onClick={() => setLegendFilter((prev) => { const next = new Set(prev); const k = item.key as any; if (next.has(k)) next.delete(k); else next.add(k); return next; })}
                     >
                       {item.label}
                     </button>
-                  ))}
-                  <div className="ml-auto bg-white/90 rounded shadow flex items-center">
-                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={autoOrganizePins}>Auto</button>
-                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
-                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
-                    <button className="px-2 py-1 text-gray-700 hover:bg-gray-100 text-sm" onClick={() => setZoom(1)}>Reset</button>
-                  </div>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-sm text-gray-700">Attention needed:</span>
+                {([['red','#EF4444'], ['yellow','#F59E0B'], ['green','#22C55E']] as const).map(([key, color]) => {
+                  const selected = statusFilter.has(key as PinStatus);
+                  return (
+                    <button
+                      key={key}
+                      className={`w-10 h-6 rounded-full border flex items-center justify-center relative ${selected ? 'ring-2 ring-blue-200' : ''}`}
+                      style={{ background: '#ffffff', borderColor: '#e5e7eb' }}
+                      onClick={() => setStatusFilter(prev => { const next = new Set(prev); if (next.has(key as PinStatus)) next.delete(key as PinStatus); else next.add(key as PinStatus); return next; })}
+                      aria-label={`Filter ${key}`}
+                    >
+                      <span className="w-6 h-3 rounded-full" style={{ backgroundColor: color, opacity: selected ? 1 : 0.3 }}></span>
+                      {selected && <Check className="absolute right-1 top-1 text-gray-700" size={12} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Secondary view card */}
+            <div className="lg:col-span-2 bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <select className="text-sm border rounded px-3 py-1" value={view2Mode} onChange={(e)=>setView2Mode(e.target.value as View2Mode)}>
+                  <option value="none">Empty</option>
+                  <option value="map2d">Map 2D</option>
+                  <option value="solar2d">Solar 2D</option>
+                  <option value="list">List</option>
+                  <option value="avgday">Timeline</option>
+                </select>
+                <div className="flex items-center gap-2">
+                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={autoOrganizePins}>Auto</button>
+                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
+                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
+                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom(1)}>Reset</button>
                 </div>
-                {legendFilter && (
-                  <div className="mt-4 bg-gray-50 rounded-xl p-4">
-                    <div className="text-sm text-gray-600 mb-2">{legendItems.find(i => (i.key as any) === legendFilter)?.label}</div>
-                    <div className="space-y-2 max-h-40 overflow-auto pr-2">
-                      {pins.filter(p => p.kind === legendFilter).map((p) => (
-                        <div key={p.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: kindColors[p.kind] }}></span>
-                            <span className="text-sm text-gray-800">{p.label}</span>
-                          </div>
-                          <span className="text-xs text-gray-400">({Math.round(p.xPct)}%, {Math.round(p.yPct)}%)</span>
-                        </div>
+              </div>
+              {view2Mode === 'map2d' ? (
+                <div ref={mapRef2} className="relative h-64 bg-gray-100 overflow-hidden rounded-lg">
+                  <div className="absolute inset-0 origin-center">
+                    <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                  </div>
+                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">↗</button>
+                  {pins
+                    .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
+                    .map((p) => (
+                      <div key={p.id} className="absolute" style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: 'translate(-50%, -50%)' }}>
+                        <span className="absolute w-3 h-3 rounded-full" style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }} />
+                        <div className="relative px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow translate-x-2 -translate-y-1/2">{formatLabel(p.label)}</div>
+                      </div>
+                    ))}
+                </div>
+              ) : view2Mode === 'solar2d' ? (
+                <div className="relative h-64 bg-gray-100 rounded-lg">
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      {layerRadii.map((r, i) => (
+                        <path key={`v2-path-${i}`} id={`v2-orbit-${i}`} d={`M 50 50 m -${r}, 0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`} />
                       ))}
-                      {pins.filter(p => p.kind === legendFilter).length === 0 && (
-                        <div className="text-xs text-gray-500">No items yet</div>
-                      )}
+                    </defs>
+                    {layerRadii.map((r, i) => (
+                      <g key={`v2-ring-${i}`}>
+                        <circle cx="50" cy="50" r={r} stroke="#E5E7EB" strokeDasharray="2 2" strokeWidth="0.6" fill="none" />
+                        <text fontSize="3" fill="#64748B"><textPath href={`#v2-orbit-${i}`} startOffset="25%" textAnchor="middle">{layerNames[i]}</textPath></text>
+                      </g>
+                    ))}
+                  </svg>
+                  {pins
+                    .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
+                    .map((p) => (
+                      <div key={p.id} className="absolute" style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: 'translate(-50%, -50%)' }}>
+                        <span className="absolute w-3 h-3 rounded-full" style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }} />
+                        <div className="relative px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow translate-x-2 -translate-y-1/2">{formatLabel(p.label)}</div>
+                      </div>
+                    ))}
+                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">↗</button>
+                </div>
+              ) : view2Mode === 'list' ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {(legendFilter.size > 0 ? Array.from(legendFilter) : (['person','task','note','decision','location'] as const)).map((k) => (
+                    <div key={k as string} className="bg-gray-50 rounded-lg p-3">
+                      <div className="text-sm text-gray-600 mb-2 capitalize">{k}</div>
+                      <div className="space-y-2 max-h-48 overflow-auto pr-2">
+                        {pins
+                          .filter(p => p.kind === (k as any))
+                          .filter(p => statusFilter.size === 0 || ((p as any).status && statusFilter.has((p as any).status)))
+                          .map((p) => (
+                            <div key={p.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: kindColors[p.kind] }}></span>
+                                <span className="text-sm text-gray-800">{p.label}</span>
+                              </div>
+                              <span className="text-xs text-gray-400">({Math.round(p.xPct)}%, {Math.round(p.yPct)}%)</span>
+                            </div>
+                          ))}
+                        {pins.filter(p => p.kind === (k as any) && (statusFilter.size === 0 || ((p as any).status && statusFilter.has((p as any).status)))).length === 0 && (
+                          <div className="text-xs text-gray-500">No items</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : view2Mode === 'avgday' ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">Timeline (drag blocks to adjust start; double‑click to edit)</div>
+                    <div className="text-xs text-gray-600 flex items-center gap-2">
+                      <span>Range:</span>
+                      {(['day','week','month','year'] as const).map(r => (
+                        <button key={r} className={`px-2 py-1 rounded border ${'day'===r ? 'bg-gray-100' : ''}`} disabled>{r}</button>
+                      ))}
                     </div>
                   </div>
-                )}
-              </div>
-              </>
-              )}
+                  {renderAvgDayTimeline('v2')}
+                </div>
+              ) : view2Mode === 'none' ? (
+                <div className="relative h-40 bg-gray-100 overflow-hidden rounded-lg">
+                  <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">
+                    ↗
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             {/* Quick Actions */}
             <div className={`space-y-4 ${sabbathMode ? 'opacity-80 saturate-75' : ''}`}>
               {/* Community-first: Who needs love today? */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                 <h3 className="font-semibold mb-3">Who needs love today?</h3>
                 <div className="space-y-2">
                   {heartConnections
@@ -709,7 +1079,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 </div>
               </div>
                {/* Next Best Action */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
               <h3 className="font-semibold mb-3">Next</h3>
               <div className="p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-medium text-blue-900">{nextBestActionByDeficit[primaryDeficit].title}</h4>
@@ -732,7 +1102,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
               </div>
 
               {/* Daily Scores */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                 <h3 className="font-semibold mb-4">Daily Scores</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
@@ -752,7 +1122,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
             </div>
 
             {/* Today's Story */}
-            <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm">
+            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
               <h3 className="font-semibold mb-4">Today's Story</h3>
               <div className="space-y-4">
                 {todayStory.map((item, index) => {
@@ -774,7 +1144,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
 
             {/* Anchors (faith mode) */}
             {faithModeEnabled && (
-              <div className="bg-white rounded-xl p-6 shadow-sm">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                 <h3 className="font-semibold mb-4">Daily Anchors</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {anchors.map((anchor, index) => (
