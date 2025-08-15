@@ -7,6 +7,9 @@ import Legend from './components/Legend';
 import MapView from './components/MapView';
 import SecondaryView from './components/SecondaryView';
 import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check, Menu, X } from 'lucide-react';
+import FooterBar from './components/FooterBar';
+import FiltersDrawer from './components/FiltersDrawer';
+import ProfileDrawer from './components/ProfileDrawer';
 
 const ConsolidatedLifeTracker: React.FC = () => {
   // local Card alias kept for backward compatibility; prefer components/Card
@@ -589,42 +592,18 @@ const ConsolidatedLifeTracker: React.FC = () => {
           {/* (compact) no extra controls row here per design */}
         </LocalCard>
 
-        {/* Filters Drawer */}
-        {showFilters && (
-          <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/30" onClick={()=>setShowFilters(false)} />
-            <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white shadow-xl p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold">Filters</h2>
-                <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={()=>setShowFilters(false)} aria-label="Close filters"><X className="w-4 h-4"/></button>
-              </div>
-              <div className="space-y-3">
-                <div className="text-sm font-medium text-gray-700">Cards</div>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showView1} onChange={(e)=>setShowView1(e.target.checked)} /> View 1</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showLegendCard} onChange={(e)=>setShowLegendCard(e.target.checked)} /> Legend</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showView2Card} onChange={(e)=>setShowView2Card(e.target.checked)} /> View 2</label>
-              </div>
-            </div>
-          </div>
-        )}
+        <FiltersDrawer
+          show={showFilters}
+          onClose={()=>setShowFilters(false)}
+          showView1={showView1}
+          setShowView1={setShowView1}
+          showLegendCard={showLegendCard}
+          setShowLegendCard={setShowLegendCard}
+          showView2Card={showView2Card}
+          setShowView2Card={setShowView2Card}
+        />
 
-        {/* Profile Drawer */}
-        {showProfile && (
-          <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/30" onClick={()=>setShowProfile(false)} />
-            <div className="absolute inset-y-0 right-0 w-80 max-w-[85vw] bg-white shadow-xl p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold">Profile</h2>
-                <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={()=>setShowProfile(false)} aria-label="Close profile"><X className="w-4 h-4"/></button>
-              </div>
-              <div className="space-y-3 text-sm text-gray-700">
-                <div><input type="checkbox" className="mr-2"/> Option A</div>
-                <div><input type="checkbox" className="mr-2"/> Option B</div>
-                <div><input type="checkbox" className="mr-2"/> Option C</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <ProfileDrawer show={showProfile} onClose={()=>setShowProfile(false)} />
 
       {/* Global Edit Modal */}
       {editingId && (() => {
@@ -1116,23 +1095,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
         {/* Analytics section is currently disabled in this build. */}
 
         {/* Footer (mood/energy) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur p-3 border-t">
-          <div className="max-w-7xl mx-auto flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">Mood</span>
-              <input type="range" min={0} max={5} value={mood} onChange={(e) => setMood(Number(e.target.value))} />
-              <span className="text-xs">{mood}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-600">Energy</span>
-              <input type="range" min={0} max={5} value={energy} onChange={(e) => setEnergy(Number(e.target.value))} />
-              <span className="text-xs">{energy}</span>
-            </div>
-            <button className="ml-auto w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow flex items-center justify-center">
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <FooterBar mood={mood} setMood={setMood} energy={energy} setEnergy={setEnergy} onAdd={()=>{}} />
       </div>
     </div>
   );
