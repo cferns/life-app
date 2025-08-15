@@ -5,6 +5,7 @@ import Card from './components/Card';
 import type { MapPin, PinKind, PinStatus } from './types';
 import Legend from './components/Legend';
 import MapView from './components/MapView';
+import SecondaryView from './components/SecondaryView';
 import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check, Menu, X } from 'lucide-react';
 
 const ConsolidatedLifeTracker: React.FC = () => {
@@ -836,83 +837,24 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 </div>
               ) : (
               <>
-              <div ref={mapRef} onDoubleClick={handleMapDoubleClick} className={`relative bg-gray-100 cursor-crosshair select-none overflow-hidden border-t border-gray-200`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem' }}>
-                {/* Grid background */}
-                <div className="absolute inset-0 origin-center" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
-                  <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                </div>
-                <button
-                  className="absolute top-3 right-3 z-10 bg-white border border-gray-200 rounded-xl w-9 h-9 shadow-sm hover:bg-gray-50 flex items-center justify-center"
-                  onClick={toggleFullscreen}
-                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-                >
-                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </button>
-                {/* Solar rings */}
-                {solarView && (
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ transform: `scale(${zoom})` }}>
-                    <defs>
-                      {layerRadii.map((r, i) => (
-                        <path key={`path-${i}`} id={`orbit-${i}`} d={`M 50 50 m -${r}, 0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`} />
-                      ))}
-                    </defs>
-                    {layerRadii.map((r, i) => (
-                      <g key={i}>
-                        <circle cx="50" cy="50" r={r} stroke="#E5E7EB" strokeDasharray="2 2" strokeWidth="0.6" fill="none" />
-                        <text fontSize="3" fill="#64748B">
-                          <textPath href={`#orbit-${i}`} startOffset="25%" textAnchor="middle">{layerNames[i]}</textPath>
-                        </text>
-                      </g>
-                    ))}
-                  </svg>
-                )}
-                {/* Draggable pins styled as dot + bubble label */}
-                {pins
-                  .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
-                  .map((p) => (
-                  <div
-                    key={p.id}
-                    className="absolute group"
-                    style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: `translate(-50%, -50%) scale(${zoom})` }}
-                    onMouseDown={() => setDraggingId(p.id)}
-                    onDoubleClick={(e) => { e.stopPropagation(); setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta || {}), status: (p as any).status }); }}
-                  >
-                    <div className="relative">
-                      {/* Dot centered exactly at the pin (on the orbit) */}
-                      <span
-                        className="absolute w-3 h-3 rounded-full"
-                        style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: p.status ? statusColors[p.status] : defaultGrey }}
-                      />
-                      {/* Label offset to the right but vertically centered with the dot */}
-                      <div
-                        className="absolute px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow"
-                        style={{
-                          left: 0,
-                          top: 0,
-                          transform: `translate(${p.xPct < 50 ? '-12px' : '12px'}, -50%)${p.xPct < 50 ? ' translateX(-100%)' : ''}`,
-                        }}
-                      >
-                        {formatLabel(p.label)}
-                      </div>
-                    </div>
-                    {/* inline editor removed; we show a centered modal instead */}
-                  </div>
-                ))}
-                {/* Curved connections (example: connect root pins to You) */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  {pins.filter((p) => p.kind === 'root').map((p) => {
-                    const sx = `${50}%`; const sy = `${50}%`;
-                    const tx = `${p.xPct}%`; const ty = `${p.yPct}%`;
-                    const c1x = `${(50 + p.xPct) / 2}%`; const c1y = `${50}%`;
-                    const c2x = `${(50 + p.xPct) / 2}%`; const c2y = `${p.yPct}%`;
-                    return (
-                      <path key={`edge-${p.id}`} d={`M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`} stroke="#94A3B8" strokeWidth="2" fill="none" />
-                    );
-                  })}
-                </svg>
-                {/* (moved) zoom controls now live next to legend */}
-              </div>
-              {/* Legend and secondary view moved OUTSIDE of the main visualization card */}
+              <MapView
+                mapRef={mapRef}
+                isFullscreen={isFullscreen}
+                zoom={zoom}
+                solarView={solarView}
+                layerRadii={layerRadii}
+                layerNames={layerNames}
+                pins={pins as any}
+                legendFilter={legendFilter as any}
+                statusFilter={statusFilter as any}
+                defaultGrey={defaultGrey}
+                statusColors={statusColors as any}
+                formatLabel={formatLabel}
+                toggleFullscreen={toggleFullscreen}
+                onMapDoubleClick={handleMapDoubleClick}
+                onPinMouseDown={(id)=>setDraggingId(id)}
+                onPinDoubleClick={(p)=>{ setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta||{}), status: (p as any).status }); }}
+              />
               {quickAddOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                   <div className="absolute inset-0 bg-black/30" onClick={() => setQuickAddOpen(false)} />
@@ -968,107 +910,24 @@ const ConsolidatedLifeTracker: React.FC = () => {
             {/* Secondary view card */}
             {showView2Card && (
             <LocalCard className="lg:col-span-2 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <select className="text-sm border rounded px-3 py-1" value={view2Mode} onChange={(e)=>setView2Mode(e.target.value as View2Mode)}>
-                  <option value="none">Empty</option>
-                  <option value="map2d">Map 2D</option>
-                  <option value="solar2d">Solar 2D</option>
-                  <option value="list">List</option>
-                  <option value="avgday">Timeline</option>
-                </select>
-                <div className="flex items-center gap-2">
-                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={autoOrganizePins}>Auto</button>
-                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
-                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
-                  <button className="px-4 py-1 rounded-full border bg-white text-gray-800 text-sm" onClick={() => setZoom(1)}>Reset</button>
-                </div>
-              </div>
-              {view2Mode === 'map2d' ? (
-                <div ref={mapRef2} className="relative h-64 bg-gray-100 overflow-hidden rounded-lg">
-                  <div className="absolute inset-0 origin-center">
-                    <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                  </div>
-                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">↗</button>
-                  {pins
-                    .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
-                    .map((p) => (
-                      <div key={p.id} className="absolute" style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: 'translate(-50%, -50%)' }}>
-                        <span className="absolute w-3 h-3 rounded-full" style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }} />
-                        <div className="relative px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow translate-x-2 -translate-y-1/2">{formatLabel(p.label)}</div>
-                      </div>
-                    ))}
-                </div>
-              ) : view2Mode === 'solar2d' ? (
-                <div className="relative h-64 bg-gray-100 rounded-lg">
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <defs>
-                      {layerRadii.map((r, i) => (
-                        <path key={`v2-path-${i}`} id={`v2-orbit-${i}`} d={`M 50 50 m -${r}, 0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`} />
-                      ))}
-                    </defs>
-                    {layerRadii.map((r, i) => (
-                      <g key={`v2-ring-${i}`}>
-                        <circle cx="50" cy="50" r={r} stroke="#E5E7EB" strokeDasharray="2 2" strokeWidth="0.6" fill="none" />
-                        <text fontSize="3" fill="#64748B"><textPath href={`#v2-orbit-${i}`} startOffset="25%" textAnchor="middle">{layerNames[i]}</textPath></text>
-                      </g>
-                    ))}
-                  </svg>
-                  {pins
-                    .filter((p) => (legendFilter.size === 0 || legendFilter.has(p.kind)) && (statusFilter.size === 0 || (p as any).status && statusFilter.has((p as any).status)))
-                    .map((p) => (
-                      <div key={p.id} className="absolute" style={{ left: `${p.xPct}%`, top: `${p.yPct}%`, transform: 'translate(-50%, -50%)' }}>
-                        <span className="absolute w-3 h-3 rounded-full" style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)', backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }} />
-                        <div className="relative px-3 py-1 rounded-full text-xs text-slate-700 bg-white/50 shadow translate-x-2 -translate-y-1/2">{formatLabel(p.label)}</div>
-                      </div>
-                    ))}
-                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">↗</button>
-                </div>
-              ) : view2Mode === 'list' ? (
-                <div className="grid grid-cols-1 gap-4">
-                  {(legendFilter.size > 0 ? Array.from(legendFilter) : (['person','task','note','decision','location'] as const)).map((k) => (
-                    <div key={k as string} className="bg-gray-50 rounded-lg p-3">
-                      <div className="text-sm text-gray-600 mb-2 capitalize">{k}</div>
-                      <div className="space-y-2 max-h-48 overflow-auto pr-2">
-                        {pins
-                          .filter(p => p.kind === (k as any))
-                          .filter(p => statusFilter.size === 0 || ((p as any).status && statusFilter.has((p as any).status)))
-                          .map((p) => (
-                            <div key={p.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 shadow-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: kindColors[p.kind] }}></span>
-                                <span className="text-sm text-gray-800">{p.label}</span>
-                              </div>
-                              <span className="text-xs text-gray-400">({Math.round(p.xPct)}%, {Math.round(p.yPct)}%)</span>
-                            </div>
-                          ))}
-                        {pins.filter(p => p.kind === (k as any) && (statusFilter.size === 0 || ((p as any).status && statusFilter.has((p as any).status)))).length === 0 && (
-                          <div className="text-xs text-gray-500">No items</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : view2Mode === 'avgday' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">Timeline (drag blocks to adjust start; double‑click to edit)</div>
-                    <div className="text-xs text-gray-600 flex items-center gap-2">
-                      <span>Range:</span>
-                      {(['day','week','month','year'] as const).map(r => (
-                        <button key={r} className={`px-2 py-1 rounded border ${'day'===r ? 'bg-gray-100' : ''}`} disabled>{r}</button>
-                      ))}
-                    </div>
-                  </div>
-                  {renderAvgDayTimeline('v2')}
-                </div>
-              ) : view2Mode === 'none' ? (
-                <div className="relative h-40 bg-gray-100 overflow-hidden rounded-lg">
-                  <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                  <button className="absolute bottom-2 left-2 bg-white border border-gray-200 rounded-md p-1 shadow" aria-label="Expand">
-                    ↗
-                  </button>
-                </div>
-              ) : null}
+              <SecondaryView
+                view2Mode={view2Mode as any}
+                setView2Mode={(m)=>setView2Mode(m as any)}
+                mapRef2={mapRef2}
+                pins={pins as any}
+                legendFilter={legendFilter as any}
+                statusFilter={statusFilter as any}
+                kindColors={kindColors as any}
+                defaultGrey={defaultGrey}
+                statusColors={statusColors as any}
+                layerRadii={layerRadii}
+                layerNames={layerNames}
+                formatLabel={formatLabel}
+                autoOrganizePins={autoOrganizePins}
+                zoom={zoom}
+                setZoom={setZoom}
+                renderAvgDayTimeline={(which)=>renderAvgDayTimeline('v2')}
+              />
             </LocalCard>
             )}
 
