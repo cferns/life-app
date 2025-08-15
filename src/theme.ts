@@ -1,4 +1,4 @@
-export type ThemeName = 'light' | 'warm' | 'dim' | 'custom';
+export type ThemeName = 'light' | 'warm' | 'dark' | 'custom';
 
 export type ThemePalette = {
   appBg: string;
@@ -15,16 +15,16 @@ export type ThemePalette = {
 
 export const defaultPalettes: Record<Exclude<ThemeName, 'custom'>, ThemePalette> = {
   light: {
-    appBg: '#f2f5f7',
-    text: '#0f172a',
-    cardBg: '#ffffff',
-    cardBorder: '#e5e7eb',
-    pillBg: '#f1f5f9',
-    accentBg: '#b8403b',
-    accentText: '#ffffff',
-    controlBg: '#ffffff',
-    controlText: '#1f2937',
-    controlBorder: 'rgba(0,0,0,0.12)'
+    appBg: '#F2F2F7',
+    text: '#111827',
+    cardBg: '#FFFFFF',
+    cardBorder: '#E5E5EA',
+    pillBg: '#F2F2F7',
+    accentBg: '#FFFFFF',
+    accentText: '#111827',
+    controlBg: '#F2F2F7',
+    controlText: '#111827',
+    controlBorder: '#E5E5EA'
   },
   warm: {
     appBg: '#fffaf4',
@@ -32,30 +32,33 @@ export const defaultPalettes: Record<Exclude<ThemeName, 'custom'>, ThemePalette>
     cardBg: '#fff7ed',
     cardBorder: '#f5e0c3',
     pillBg: '#f9efe3',
-    accentBg: '#c2412d',
-    accentText: '#fff7ed',
+    accentBg: '#fff7ed',
+    accentText: '#2b2a28',
     controlBg: '#ffffff',
     controlText: '#3f3f46',
     controlBorder: 'rgba(0,0,0,0.10)'
   },
-  dim: {
-    appBg: '#0f1115',
-    text: '#e5e7eb',
-    cardBg: '#161a1d',
-    cardBorder: '#2a3036',
-    pillBg: '#1f2429',
-    accentBg: '#334155',
-    accentText: '#e2e8f0',
-    controlBg: '#0b1220',
-    controlText: '#e2e8f0',
-    controlBorder: 'rgba(148,163,184,0.35)'
+  dark: {
+    appBg: '#000000',
+    text: '#E5E7EB',
+    cardBg: '#1C1C1E',
+    cardBorder: '#2C2C2E',
+    pillBg: '#2C2C2E',
+    accentBg: '#1C1C1E',
+    accentText: '#E5E7EB',
+    controlBg: '#0B0B0C',
+    controlText: '#E5E7EB',
+    controlBorder: '#38383A'
   }
 };
 
 const SELECTION_KEY = 'udn_theme';
 const CUSTOM_KEY = 'udn_theme_custom';
 
-export const getStoredThemeName = (): ThemeName => (localStorage.getItem(SELECTION_KEY) as ThemeName) || 'light';
+export const getStoredThemeName = (): ThemeName => {
+  const raw = (localStorage.getItem(SELECTION_KEY) as string) || 'light';
+  return (raw === 'dim' ? 'dark' : raw) as ThemeName;
+};
 export const setStoredThemeName = (name: ThemeName) => localStorage.setItem(SELECTION_KEY, name);
 
 export const getStoredCustomPalette = (): ThemePalette | null => {

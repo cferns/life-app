@@ -40,7 +40,7 @@ const MapView: React.FC<Props> = ({
   onPinDoubleClick,
 }) => {
   return (
-    <div ref={mapRef} onDoubleClick={onMapDoubleClick} className={`relative cursor-crosshair select-none overflow-hidden border-t`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem', background: '#f3f4f6', borderColor: 'var(--card-border)' }}>
+    <div ref={mapRef} onDoubleClick={onMapDoubleClick} className={`relative cursor-crosshair select-none overflow-hidden border-t`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem', background: 'var(--surface-bg, #f3f4f6)', borderColor: 'var(--card-border)' }}>
       {/* Fullscreen toggle */}
       <button
         className="absolute top-3 right-3 z-10 rounded-xl w-9 h-9 shadow-sm hover:opacity-95 flex items-center justify-center"
@@ -52,7 +52,7 @@ const MapView: React.FC<Props> = ({
       </button>
       {/* Grid background */}
       <div className="absolute inset-0 origin-center" style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}>
-        <div className="absolute inset-0 bg-[linear-gradient(#e5e7eb_1px,transparent_1px),linear-gradient(90deg,#e5e7eb_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute inset-0" style={{ backgroundImage: `linear-gradient(var(--grid-color, #e5e7eb) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color, #e5e7eb) 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
       </div>
       {/* Solar rings */}
       {solarView && (

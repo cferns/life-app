@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { applyThemeName, getStoredThemeName } from './theme';
+import type { ThemeName } from './theme';
 import ThreeSolarView from './ThreeSolarView';
 import Card from './components/Card';
 import type { MapPin, PinKind, PinStatus } from './types';
@@ -38,7 +39,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [rootCausesPreview, setRootCausesPreview] = useState<string>('');
   const [faithModeEnabled, setFaithModeEnabled] = useState<boolean>(true);
   const [sabbathMode, setSabbathMode] = useState<boolean>(false);
-  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'custom'>(() => getStoredThemeName());
+  const [theme, setTheme] = useState<ThemeName>(() => getStoredThemeName());
   useEffect(()=>{ applyThemeName(theme); }, [theme]);
   // Ensure initial mount applies stored theme cleanly
   useEffect(()=>{ applyThemeName(getStoredThemeName()); }, []);

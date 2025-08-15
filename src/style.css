@@ -88,16 +88,16 @@ button {}
 
 /* Theme presets using data-theme attribute on body */
 body[data-theme="light"] {
-  --app-bg: #f8fafc;
-  --text: #0f172a;
-  --card-bg: #ffffff;
-  --card-border: #e5e7eb;
-  --pill-bg: #f1f5f9;
-  --accent-bg: #b8403b;
-  --accent-text: #ffffff;
-  --control-bg: #ffffff;
-  --control-text: #1f2937;
-  --control-border: rgba(0,0,0,0.12);
+  --app-bg: #F2F2F7;
+  --text: #111827;
+  --card-bg: #FFFFFF;
+  --card-border: #E5E5EA;
+  --pill-bg: #F2F2F7;
+  --accent-bg: #FFFFFF;
+  --accent-text: #111827;
+  --control-bg: #F2F2F7;
+  --control-text: #111827;
+  --control-border: #E5E5EA;
 }
 
 body[data-theme="warm"] {
@@ -113,17 +113,17 @@ body[data-theme="warm"] {
   --control-border: rgba(0,0,0,0.10);
 }
 
-body[data-theme="dim"] {
-  --app-bg: #0f172a; /* slate-900 */
-  --text: #e2e8f0;   /* slate-200 */
-  --card-bg: #111827; /* gray-900 */
-  --card-border: #374151; /* gray-700 */
-  --pill-bg: #1f2937; /* gray-800 */
-  --accent-bg: #334155; /* slate-700 */
-  --accent-text: #e2e8f0;
-  --control-bg: #0b1220;
-  --control-text: #e2e8f0;
-  --control-border: rgba(148,163,184,0.35);
+body[data-theme="dark"] {
+  --app-bg: #000000;
+  --text: #E5E7EB;
+  --card-bg: #1C1C1E;
+  --card-border: #2C2C2E;
+  --pill-bg: #2C2C2E;
+  --accent-bg: #1C1C1E;
+  --accent-text: #E5E7EB;
+  --control-bg: #0B0B0C;
+  --control-text: #E5E7EB;
+  --control-border: #38383A;
 }
 
 /* Custom is set dynamically via inline CSS vars; keep sensible fallbacks */

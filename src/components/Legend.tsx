@@ -18,7 +18,7 @@ const Legend: React.FC<Props> = ({ items, legendFilter, onToggleKind, statusFilt
       <div className="rounded-t-2xl -mx-4 -mt-4 px-4 py-3" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
         <div className="text-lg font-medium">Legend</div>
       </div>
-      <div className="flex items-center gap-3 flex-nowrap overflow-x-auto pb-2 pt-3">
+      <div className="flex items-center gap-3 flex-nowrap overflow-x-auto pb-2 pt-3" style={{ background: 'var(--card-bg)' }}>
         {items.map((item) => {
           const selected = legendFilter.has(item.key as any);
           return (
