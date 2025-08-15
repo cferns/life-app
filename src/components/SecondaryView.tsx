@@ -18,9 +18,9 @@ type Props = {
   autoOrganizePins: () => void;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
-  setPins: React.Dispatch<React.SetStateAction<any[]>>;
-  onOpenQuickAdd: (startMin: number) => void;
-  onEditPin: (id: string) => void;
+  setPins?: React.Dispatch<React.SetStateAction<any[]>>;
+  onOpenQuickAdd?: (startMin: number) => void;
+  onEditPin?: (id: string) => void;
 };
 
 const SecondaryView: React.FC<Props> = ({
@@ -137,7 +137,7 @@ const SecondaryView: React.FC<Props> = ({
               ))}
             </div>
           </div>
-          <AvgDayTimeline which="v2" pins={pins} setPins={setPins} onOpenQuickAdd={onOpenQuickAdd} onEditPin={onEditPin} />
+          <AvgDayTimeline which="v2" pins={pins} setPins={setPins as any} onOpenQuickAdd={onOpenQuickAdd as any} onEditPin={onEditPin as any} />
         </div>
       ) : view2Mode === 'none' ? (
         <div className="relative h-40 bg-gray-100 overflow-hidden rounded-lg">

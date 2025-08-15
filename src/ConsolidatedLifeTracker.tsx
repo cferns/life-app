@@ -7,7 +7,7 @@ import Legend from './components/Legend';
 import MapView from './components/MapView';
 import SecondaryView from './components/SecondaryView';
 import AvgDayTimeline from './components/AvgDayTimeline';
-import { Clock, Plus, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check, Menu, X } from 'lucide-react';
+import { Plus, Star, Coffee, Phone, Moon, Users, Compass, Heart, Check } from 'lucide-react';
 import FooterBar from './components/FooterBar';
 import FiltersDrawer from './components/FiltersDrawer';
 import ProfileDrawer from './components/ProfileDrawer';
@@ -18,6 +18,9 @@ import GlobalEditModal from './components/GlobalEditModal';
 import QuickAddModal from './components/QuickAddModal';
 import IntentQuickAddModal from './components/IntentQuickAddModal';
 import StuckModal from './components/StuckModal';
+import HeaderBar from './components/HeaderBar';
+import VisualizationToolbar from './components/VisualizationToolbar';
+import ListView from './components/ListView';
 
 const ConsolidatedLifeTracker: React.FC = () => {
   // local Card alias kept for backward compatibility; prefer components/Card
@@ -442,29 +445,11 @@ const ConsolidatedLifeTracker: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-0">
       <div className="max-w-7xl mx-auto space-y-6 px-6 sm:px-9 pt-6 sm:pt-8">
-        {/* Header */}
-        <LocalCard className="p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center" onClick={()=>setShowFilters(true)} aria-label="Open filters">
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-              <h1 className="text-3xl font-bold text-gray-900">Daily Navigator</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2 py-1 rounded ${syncState === 'synced' ? 'bg-green-100 text-green-800' : syncState === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-200 text-gray-700'}`}>{syncState}</span>
-              <button className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200" aria-label="Profile" onClick={()=>setShowProfile(true)}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-gray-500"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Navigate life: water • call mom • choose one thing" />
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v22"/><path d="M5 8v8"/><path d="M19 8v8"/></svg>
-          </div>
-          {/* (compact) no extra controls row here per design */}
-        </LocalCard>
+        <HeaderBar
+          syncState={syncState}
+          onOpenFilters={()=>setShowFilters(true)}
+          onOpenProfile={()=>setShowProfile(true)}
+        />
 
         <FiltersDrawer
           show={showFilters}
@@ -493,25 +478,25 @@ const ConsolidatedLifeTracker: React.FC = () => {
         onCancel={()=> setEditingId(null)}
         onDelete={()=>{ const pid = editingId; setPins((prev) => prev.filter((x) => x.id !== pid)); setEditingId(null); }}
         onSave={()=>{
-          const p = pins.find(pp => pp.id === editingId);
+        const p = pins.find(pp => pp.id === editingId);
           if (!p) { setEditingId(null); return; }
-          setPins((prev) => prev.map((x) => {
-            if (x.id !== p!.id) return x;
-            let next: any = { ...x, label: editText, kind: editKind, meta: editMeta };
-            if (editMeta?.status) next.status = editMeta.status;
-            if (solarView && x.kind !== editKind) {
-              const cx = 50, cy = 50;
-              const angle = Math.atan2(x.yPct - cy, x.xPct - cx);
-              const r = getRingRadiusForKind(editKind);
-              if (r > 0) {
-                next.xPct = cx + r * Math.cos(angle);
-                next.yPct = cy + r * Math.sin(angle);
-              }
-            }
-            return next;
-          }));
-          setEditingId(null);
-        }}
+                      setPins((prev) => prev.map((x) => {
+                        if (x.id !== p!.id) return x;
+                        let next: any = { ...x, label: editText, kind: editKind, meta: editMeta };
+                        if (editMeta?.status) next.status = editMeta.status;
+                        if (solarView && x.kind !== editKind) {
+                          const cx = 50, cy = 50;
+                          const angle = Math.atan2(x.yPct - cy, x.xPct - cx);
+                          const r = getRingRadiusForKind(editKind);
+                          if (r > 0) {
+                            next.xPct = cx + r * Math.cos(angle);
+                            next.yPct = cy + r * Math.sin(angle);
+                          }
+                        }
+                        return next;
+                      }));
+                      setEditingId(null);
+                    }}
       />
 
         {/* Today Tab */}
@@ -535,27 +520,14 @@ const ConsolidatedLifeTracker: React.FC = () => {
                   </select>
                 </div>
               )}
-              {/* Map card header row (selector left, light controls right) */}
-              <div className="flex items-center justify-between px-4 pt-3 pb-3 border-b">
-                <select
-                  className="text-sm bg-white border border-gray-200 rounded-xl px-3 py-1 text-gray-700 shadow-sm"
-                  value={viewType}
-                  onChange={(e) => setViewType(e.target.value as ViewType)}
-                  title="Visualization"
-                >
-                  <option value="map2d">Map 2D</option>
-                  <option value="solar2d">Solar 2D</option>
-                  <option value="solar3d">Solar 3D</option>
-                  <option value="list">List</option>
-                  <option value="avgday">Timeline</option>
-                </select>
-                <div className="flex items-center gap-6 rounded-xl border border-gray-200 bg-white px-4 py-1 shadow-sm">
-                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={autoOrganizePins}>Auto</button>
-                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom((z) => Math.min(2, z + 0.1))}>+</button>
-                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}>-</button>
-                  <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={() => setZoom(1)}>Reset</button>
-                </div>
-              </div>
+              <VisualizationToolbar
+                viewType={viewType}
+                setViewType={(v)=>setViewType(v as any)}
+                onAuto={autoOrganizePins}
+                onZoomIn={()=> setZoom((z)=> Math.min(2, z+0.1))}
+                onZoomOut={()=> setZoom((z)=> Math.max(0.5, z-0.1))}
+                onResetZoom={()=> setZoom(1)}
+              />
               {isFullscreen && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-white/80 backdrop-blur rounded-full px-4 py-2 shadow flex items-center gap-3">
                   <span className="text-sm text-gray-700">Attention needed:</span>
@@ -590,27 +562,13 @@ const ConsolidatedLifeTracker: React.FC = () => {
                   isFullscreen={isFullscreen}
                 />
               ) : viewType === 'list' ? (
-                <div className="p-4">
-                  {(['person','task','note','decision','location'] as const).map((k) => (
-                    <div key={k} className="mb-4">
-                      <div className="text-sm text-gray-600 mb-2 capitalize">{k}</div>
-                      <div className="space-y-2">
-                        {pins.filter(p => legendFilter.size === 0 ? p.kind === k : (legendFilter as Set<PinKind>).has(p.kind)).map((p) => (
-                          <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.status ? statusColors[p.status] : defaultGrey }}></span>
-                              <span className="text-sm text-gray-800">{p.label}</span>
-                            </div>
-                            <button className="text-xs text-blue-600" onClick={() => { setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta||{}), status: (p as any).status }); }}>Edit</button>
-                          </div>
-                        ))}
-                        {pins.filter(p => p.kind === k).length === 0 && (
-                          <div className="text-xs text-gray-500">No items</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ListView
+                  pins={pins as any}
+                  legendFilter={legendFilter as any}
+                  defaultGrey={defaultGrey}
+                  statusColors={statusColors as any}
+                  onEdit={(p)=>{ setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta||{}), status: (p as any).status }); }}
+                />
               ) : viewType === 'avgday' ? (
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
@@ -622,7 +580,13 @@ const ConsolidatedLifeTracker: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  {renderAvgDayTimeline('v1')}
+                  <AvgDayTimeline
+                    which="v1"
+                    pins={pins as any}
+                    setPins={setPins as any}
+                    onOpenQuickAdd={(start)=>{ setQuickAddOpen(true); setQuickTitle(''); setQuickStartMin(start); setQuickDurationMin(30); }}
+                    onEditPin={(id)=>{ setEditingId(id); const p = pins.find(x=>x.id===id)!; setEditText(p.label); setEditKind(p.kind as any); setEditMeta({ ...(p as any).meta, status: (p as any).status }); }}
+                  />
                 </div>
               ) : (
               <>
@@ -654,11 +618,11 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 setQuickDurationMin={setQuickDurationMin}
                 onCancel={()=> setQuickAddOpen(false)}
                 onSave={()=>{
-                  const id = Math.random().toString(36).slice(2);
-                  const newPin: any = { id, label: quickTitle || 'New task', color: '#64748B', xPct: 50, yPct: 50, kind: 'task', status: 'yellow', meta: { avgStartMin: quickStartMin, avgDurationMin: quickDurationMin } };
-                  setPins((prev)=>[...prev, newPin]);
-                  setQuickAddOpen(false);
-                  setEditingId(id); setEditKind('task'); setEditText(newPin.label); setEditMeta(newPin.meta);
+                        const id = Math.random().toString(36).slice(2);
+                        const newPin: any = { id, label: quickTitle || 'New task', color: '#64748B', xPct: 50, yPct: 50, kind: 'task', status: 'yellow', meta: { avgStartMin: quickStartMin, avgDurationMin: quickDurationMin } };
+                        setPins((prev)=>[...prev, newPin]);
+                        setQuickAddOpen(false);
+                        setEditingId(id); setEditKind('task'); setEditText(newPin.label); setEditMeta(newPin.meta);
                 }}
               />
               </>
