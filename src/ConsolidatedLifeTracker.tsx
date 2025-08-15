@@ -576,15 +576,6 @@ const ConsolidatedLifeTracker: React.FC = () => {
             <AnchorsCard faithModeEnabled={faithModeEnabled} anchors={anchors as any} />
           </div>
         )}
-
-        
-
-        
-
-        
-
-        
-
         {/* Intent Quick Add Modal */}
         <IntentQuickAddModal
           open={showIntentModal}
