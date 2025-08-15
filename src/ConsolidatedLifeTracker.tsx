@@ -336,12 +336,12 @@ const ConsolidatedLifeTracker: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-0">
+      <HeaderBar
+        syncState={syncState}
+        onOpenFilters={()=>setShowFilters(true)}
+        onOpenProfile={()=>setShowProfile(true)}
+      />
       <div className="max-w-7xl mx-auto space-y-6 px-6 sm:px-9 pt-6 sm:pt-8">
-        <HeaderBar
-          syncState={syncState}
-          onOpenFilters={()=>setShowFilters(true)}
-          onOpenProfile={()=>setShowProfile(true)}
-        />
 
         <FiltersDrawer
           show={showFilters}

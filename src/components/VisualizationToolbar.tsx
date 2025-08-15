@@ -13,7 +13,7 @@ type Props = {
 
 const VisualizationToolbar: React.FC<Props> = ({ viewType, setViewType, onAuto, onZoomIn, onZoomOut, onResetZoom }) => {
   return (
-    <div className="flex items-center justify-between px-4 pt-3 pb-3 border-b">
+    <div className="flex items-center justify-between px-4 pt-3 pb-3">
       <select
         className="text-sm bg-white border border-gray-200 rounded-xl px-3 py-1 text-gray-700 shadow-sm"
         value={viewType}
