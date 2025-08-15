@@ -315,6 +315,9 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [showView1, setShowView1] = useState(true);
   const [showLegendCard, setShowLegendCard] = useState(true);
   const [showView2Card, setShowView2Card] = useState(true);
+  const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showStory, setShowStory] = useState(true);
+  const [showAnchorsCard, setShowAnchorsCard] = useState(true);
 
   // Multiple view types switcher
   type ViewType = 'map2d' | 'solar2d' | 'solar3d' | 'list' | 'avgday';
@@ -352,6 +355,12 @@ const ConsolidatedLifeTracker: React.FC = () => {
           setShowLegendCard={setShowLegendCard}
           showView2Card={showView2Card}
           setShowView2Card={setShowView2Card}
+          showQuickActions={showQuickActions}
+          setShowQuickActions={setShowQuickActions}
+          showStory={showStory}
+          setShowStory={setShowStory}
+          showAnchors={showAnchorsCard}
+          setShowAnchors={setShowAnchorsCard}
         />
 
         <ProfileDrawer show={showProfile} onClose={()=>setShowProfile(false)} />
@@ -560,20 +569,26 @@ const ConsolidatedLifeTracker: React.FC = () => {
             )}
 
             {/* Quick Actions */}
-            <QuickActions
-              heartConnections={heartConnections as any}
-              primaryDeficit={primaryDeficit}
-              nextBestActionByDeficit={nextBestActionByDeficit}
-              dailyScores={dailyScores}
-              sabbathMode={sabbathMode}
-            />
+            {showQuickActions && (
+              <QuickActions
+                heartConnections={heartConnections as any}
+                primaryDeficit={primaryDeficit}
+                nextBestActionByDeficit={nextBestActionByDeficit}
+                dailyScores={dailyScores}
+                sabbathMode={sabbathMode}
+              />
+            )}
 
             {/* Today's Story */}
-            <div className="lg:col-span-2">
-              <TodaysStory items={todayStory as any} getCategoryColor={getCategoryColor} />
-            </div>
+            {showStory && (
+              <div className="lg:col-span-2">
+                <TodaysStory items={todayStory as any} getCategoryColor={getCategoryColor} />
+              </div>
+            )}
 
-            <AnchorsCard faithModeEnabled={faithModeEnabled} anchors={anchors as any} />
+            {showAnchorsCard && (
+              <AnchorsCard faithModeEnabled={faithModeEnabled} anchors={anchors as any} />
+            )}
           </div>
         )}
         {/* Intent Quick Add Modal */}

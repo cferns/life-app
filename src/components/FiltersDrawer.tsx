@@ -10,9 +10,15 @@ type Props = {
   setShowLegendCard: (v: boolean) => void;
   showView2Card: boolean;
   setShowView2Card: (v: boolean) => void;
+  showQuickActions?: boolean;
+  setShowQuickActions?: (v: boolean) => void;
+  showStory?: boolean;
+  setShowStory?: (v: boolean) => void;
+  showAnchors?: boolean;
+  setShowAnchors?: (v: boolean) => void;
 };
 
-const FiltersDrawer: React.FC<Props> = ({ show, onClose, showView1, setShowView1, showLegendCard, setShowLegendCard, showView2Card, setShowView2Card }) => {
+const FiltersDrawer: React.FC<Props> = ({ show, onClose, showView1, setShowView1, showLegendCard, setShowLegendCard, showView2Card, setShowView2Card, showQuickActions, setShowQuickActions, showStory, setShowStory, showAnchors, setShowAnchors }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-50">
@@ -27,6 +33,15 @@ const FiltersDrawer: React.FC<Props> = ({ show, onClose, showView1, setShowView1
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showView1} onChange={(e)=>setShowView1(e.target.checked)} /> View 1</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showLegendCard} onChange={(e)=>setShowLegendCard(e.target.checked)} /> Legend</label>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showView2Card} onChange={(e)=>setShowView2Card(e.target.checked)} /> View 2</label>
+          {typeof showQuickActions === 'boolean' && setShowQuickActions && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!showQuickActions} onChange={(e)=>setShowQuickActions(e.target.checked)} /> Quick actions</label>
+          )}
+          {typeof showStory === 'boolean' && setShowStory && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!showStory} onChange={(e)=>setShowStory(e.target.checked)} /> Today's story</label>
+          )}
+          {typeof showAnchors === 'boolean' && setShowAnchors && (
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!showAnchors} onChange={(e)=>setShowAnchors(e.target.checked)} /> Anchors</label>
+          )}
         </div>
       </div>
     </div>
