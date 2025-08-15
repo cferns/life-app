@@ -40,10 +40,11 @@ const MapView: React.FC<Props> = ({
   onPinDoubleClick,
 }) => {
   return (
-    <div ref={mapRef} onDoubleClick={onMapDoubleClick} className={`relative bg-gray-100 cursor-crosshair select-none overflow-hidden border-t border-gray-200`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem' }}>
+    <div ref={mapRef} onDoubleClick={onMapDoubleClick} className={`relative cursor-crosshair select-none overflow-hidden border-t`} style={{ height: isFullscreen ? 'calc(100vh - 3rem)' : '20rem', background: '#f3f4f6', borderColor: 'var(--card-border)' }}>
       {/* Fullscreen toggle */}
       <button
-        className="absolute top-3 right-3 z-10 bg-white border border-gray-200 rounded-xl w-9 h-9 shadow-sm hover:bg-gray-50 flex items-center justify-center"
+        className="absolute top-3 right-3 z-10 rounded-xl w-9 h-9 shadow-sm hover:opacity-95 flex items-center justify-center"
+        style={{ background: 'var(--control-bg)', border: '1px solid var(--control-border)', color: 'var(--control-text)' }}
         onClick={toggleFullscreen}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
       >

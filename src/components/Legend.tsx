@@ -15,8 +15,10 @@ type Props = {
 const Legend: React.FC<Props> = ({ items, legendFilter, onToggleKind, statusFilter, onToggleStatus }) => {
   return (
     <div>
-      <div className="text-lg font-medium mb-2">Legend</div>
-      <div className="flex items-center gap-3 flex-nowrap overflow-x-auto pb-2">
+      <div className="rounded-t-2xl -mx-4 -mt-4 px-4 py-3" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+        <div className="text-lg font-medium">Legend</div>
+      </div>
+      <div className="flex items-center gap-3 flex-nowrap overflow-x-auto pb-2 pt-3">
         {items.map((item) => {
           const selected = legendFilter.has(item.key as any);
           return (
@@ -24,9 +26,9 @@ const Legend: React.FC<Props> = ({ items, legendFilter, onToggleKind, statusFilt
               key={item.key}
               className={`shrink-0 px-3 py-2 rounded-full shadow text-sm transition ${selected ? 'ring-2 ring-blue-200' : ''}`}
               style={{
-                backgroundColor: selected ? item.color : '#ffffff',
-                color: selected ? '#ffffff' : '#4b5563',
-                border: selected ? 'none' : '1px solid #e5e7eb'
+                backgroundColor: selected ? item.color : 'var(--control-bg)',
+                color: selected ? '#ffffff' : 'var(--control-text)',
+                border: selected ? 'none' : '1px solid var(--control-border)'
               }}
               onClick={() => onToggleKind(item.key)}
             >

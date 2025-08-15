@@ -13,9 +13,10 @@ type Props = {
 
 const VisualizationToolbar: React.FC<Props> = ({ viewType, setViewType, onAuto, onZoomIn, onZoomOut, onResetZoom }) => {
   return (
-    <div className="flex items-center justify-between px-4 pt-3 pb-3">
+    <div className="flex items-center justify-between px-4 pt-3 pb-3" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
       <select
-        className="text-sm bg-white border border-gray-200 rounded-xl px-3 py-1 text-gray-700 shadow-sm"
+        className="text-sm rounded-xl px-3 py-1 shadow-sm"
+        style={{ background: 'var(--control-bg)', color: 'var(--control-text)', border: '1px solid var(--control-border)' }}
         value={viewType}
         onChange={(e) => setViewType(e.target.value as ViewType)}
         title="Visualization"
@@ -26,11 +27,11 @@ const VisualizationToolbar: React.FC<Props> = ({ viewType, setViewType, onAuto, 
         <option value="list">List</option>
         <option value="avgday">Timeline</option>
       </select>
-      <div className="flex items-center gap-6 rounded-xl border border-gray-200 bg-white px-4 py-1 shadow-sm">
-        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={onAuto}>Auto</button>
-        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={onZoomIn}>+</button>
-        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={onZoomOut}>-</button>
-        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium text-gray-800 hover:text-gray-900" onClick={onResetZoom}>Reset</button>
+      <div className="flex items-center gap-6 rounded-xl px-4 py-1 shadow-sm" style={{ background: 'var(--control-bg)', color: 'var(--control-text)', border: '1px solid var(--control-border)' }}>
+        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium" onClick={onAuto}>Auto</button>
+        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium" onClick={onZoomIn}>+</button>
+        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium" onClick={onZoomOut}>-</button>
+        <button type="button" className="appearance-none bg-transparent focus:outline-none text-sm font-medium" onClick={onResetZoom}>Reset</button>
       </div>
     </div>
   );

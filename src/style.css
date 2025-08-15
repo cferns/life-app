@@ -15,6 +15,11 @@
   --card-bg: #ffffff;
   --card-border: #e5e7eb;
   --pill-bg: #f1f5f9;
+  --accent-bg: #b91c1c; /* strong header surface */
+  --accent-text: #ffffff;
+  --control-bg: #ffffff; /* for pills on accent */
+  --control-text: #1f2937;
+  --control-border: rgba(0,0,0,0.1);
 }
 
 a {
@@ -88,6 +93,11 @@ body[data-theme="light"] {
   --card-bg: #ffffff;
   --card-border: #e5e7eb;
   --pill-bg: #f1f5f9;
+  --accent-bg: #b8403b;
+  --accent-text: #ffffff;
+  --control-bg: #ffffff;
+  --control-text: #1f2937;
+  --control-border: rgba(0,0,0,0.12);
 }
 
 body[data-theme="warm"] {
@@ -96,6 +106,11 @@ body[data-theme="warm"] {
   --card-bg: #fff7ed; /* orange-50 */
   --card-border: #f5e0c3;
   --pill-bg: #f9efe3;
+  --accent-bg: #c2412d;
+  --accent-text: #fff7ed;
+  --control-bg: #ffffff;
+  --control-text: #3f3f46;
+  --control-border: rgba(0,0,0,0.10);
 }
 
 body[data-theme="dim"] {
@@ -104,6 +119,11 @@ body[data-theme="dim"] {
   --card-bg: #111827; /* gray-900 */
   --card-border: #374151; /* gray-700 */
   --pill-bg: #1f2937; /* gray-800 */
+  --accent-bg: #334155; /* slate-700 */
+  --accent-text: #e2e8f0;
+  --control-bg: #0b1220;
+  --control-text: #e2e8f0;
+  --control-border: rgba(148,163,184,0.35);
 }
 
 /* Northern Lights (aurora) */
@@ -113,5 +133,10 @@ body[data-theme="aurora"] {
   --card-bg: rgba(17, 24, 39, 0.7);
   --card-border: rgba(148, 163, 184, 0.35);
   --pill-bg: rgba(15, 118, 110, 0.18);
+  --accent-bg: #134e4a;
+  --accent-text: #e6f6ff;
+  --control-bg: rgba(255,255,255,0.9);
+  --control-text: #0b1220;
+  --control-border: rgba(148,163,184,0.35);
 }
 
