@@ -1,4 +1,4 @@
-import React, { useMemo, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { Vector3, Euler } from 'three';
@@ -48,7 +48,7 @@ const PinSphere: React.FC<{ x: number; y: number; z?: number; color: string; lab
   );
 };
 
-const ThreeSolarView: React.FC<Props> = ({ pins, layerRadii, kindColors, statusColors, defaultGrey, ringRotations = [], kindToLayerIndex = {}, isFullscreen }) => {
+const ThreeSolarView: React.FC<Props> = ({ pins, layerRadii, statusColors, defaultGrey, ringRotations = [], kindToLayerIndex = {}, isFullscreen }) => {
   return (
     <div className="w-full" style={{ height: isFullscreen ? '100vh' : '20rem' }}>
       <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
