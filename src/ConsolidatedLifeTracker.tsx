@@ -10,6 +10,10 @@ import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Com
 import FooterBar from './components/FooterBar';
 import FiltersDrawer from './components/FiltersDrawer';
 import ProfileDrawer from './components/ProfileDrawer';
+import GlobalEditModal from './components/GlobalEditModal';
+import QuickAddModal from './components/QuickAddModal';
+import IntentQuickAddModal from './components/IntentQuickAddModal';
+import StuckModal from './components/StuckModal';
 
 const ConsolidatedLifeTracker: React.FC = () => {
   // local Card alias kept for backward compatibility; prefer components/Card
@@ -606,103 +610,39 @@ const ConsolidatedLifeTracker: React.FC = () => {
         <ProfileDrawer show={showProfile} onClose={()=>setShowProfile(false)} />
 
       {/* Global Edit Modal */}
-      {editingId && (() => {
-        const p = pins.find(pp => pp.id === editingId);
-        if (!p) return null;
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/30" onClick={() => setEditingId(null)} />
-            <div className="relative z-10 bg-white rounded-xl shadow-xl p-4 w-[320px] sm:w-[420px]">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <select className="border rounded px-2 py-1 text-xs" value={editKind} onChange={(e) => setEditKind(e.target.value as any)}>
-                    <option value="note">Note</option>
-                    <option value="task">Task</option>
-                    <option value="person">Person</option>
-                    <option value="location">Location</option>
-                    <option value="decision">Decision</option>
-                  </select>
-                  <input className="flex-1 border rounded px-2 py-1 text-xs" value={editText} onChange={(e) => setEditText(e.target.value)} placeholder="Label" />
-                  <span className="w-4 h-4 rounded-full inline-block" style={{ backgroundColor: (p as any).status ? statusColors[(p as any).status as PinStatus] : defaultGrey }}></span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <span>Status:</span>
-                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'red' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'red'}))}>🔴</button>
-                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'yellow' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'yellow'}))}>🟡</button>
-                  <button className={`px-2 py-1 rounded ${editMeta?.status === 'green' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`} onClick={() => setEditMeta((m:any)=> ({...m, status:'green'}))}>🟢</button>
-                </div>
-                {editKind === 'note' && (
-                  <textarea className="border rounded px-2 py-1 text-xs" rows={2} placeholder="Body"
-                    value={editMeta.body ?? ''}
-                    onChange={(e) => setEditMeta((m: any) => ({ ...m, body: e.target.value }))}
-                  />
-                )}
-                {editKind === 'task' && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <input className="border rounded px-2 py-1 text-xs" placeholder="Effort (min)"
-                      value={editMeta.effortMin ?? ''}
-                      onChange={(e) => setEditMeta((m: any) => ({ ...m, effortMin: e.target.value }))}
-                    />
-                    <select className="border rounded px-2 py-1 text-xs" value={editMeta.root ?? 'eatRest'} onChange={(e) => setEditMeta((m: any) => ({ ...m, root: e.target.value }))}>
-                      <option value="eatRest">Eat/Rest</option>
-                      <option value="connect">Connect</option>
-                      <option value="decide">Decide</option>
-                    </select>
-                    <input className="border rounded px-2 py-1 text-xs col-span-2" placeholder="Avg day start (min from 12:00 AM)"
-                      value={editMeta.avgStartMin ?? ''}
-                      onChange={(e) => setEditMeta((m: any) => ({ ...m, avgStartMin: Number(e.target.value) }))}
-                    />
-                    <input className="border rounded px-2 py-1 text-xs col-span-2" placeholder="Avg duration (min)"
-                      value={editMeta.avgDurationMin ?? ''}
-                      onChange={(e) => setEditMeta((m: any) => ({ ...m, avgDurationMin: Number(e.target.value) }))}
-                    />
-                    <label className="flex items-center gap-2 text-xs col-span-2 text-gray-600">
-                      <input type="checkbox" checked={!!editMeta.recurring} onChange={(e)=> setEditMeta((m:any)=> ({...m, recurring: e.target.checked}))} />
-                      <span>Recurring</span>
-                    </label>
-                  </div>
-                )}
-                {editKind === 'person' && (
-                  <input className="border rounded px-2 py-1 text-xs" placeholder="Phone/Handle"
-                    value={editMeta.handle ?? ''}
-                    onChange={(e) => setEditMeta((m: any) => ({ ...m, handle: e.target.value }))}
-                  />
-                )}
-                {editKind === 'location' && (
-                  <input className="border rounded px-2 py-1 text-xs" placeholder="Location"
-                    value={editMeta.location ?? ''}
-                    onChange={(e) => setEditMeta((m: any) => ({ ...m, location: e.target.value }))}
-                  />
-                )}
-                <div className="flex justify-end gap-2 pt-1">
-                  <button className="text-xs px-2 py-1" onClick={() => setEditingId(null)}>Cancel</button>
-                  <button className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded" onClick={() => { setPins((prev) => prev.filter((x) => x.id !== p!.id)); setEditingId(null); }}>Delete</button>
-                  <button className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
-                    onClick={() => {
-                      setPins((prev) => prev.map((x) => {
-                        if (x.id !== p!.id) return x;
-                        let next: any = { ...x, label: editText, kind: editKind, meta: editMeta };
-                        if (editMeta?.status) next.status = editMeta.status;
-                        if (solarView && x.kind !== editKind) {
-                          const cx = 50, cy = 50;
-                          const angle = Math.atan2(x.yPct - cy, x.xPct - cx);
-                          const r = getRingRadiusForKind(editKind);
-                          if (r > 0) {
-                            next.xPct = cx + r * Math.cos(angle);
-                            next.yPct = cy + r * Math.sin(angle);
-                          }
-                        }
-                        return next;
-                      }));
-                      setEditingId(null);
-                    }}
-                  >Save</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <GlobalEditModal
+        pin={pins.find(pp => pp.id === editingId) ?? null}
+        editKind={editKind}
+        setEditKind={setEditKind as any}
+        editText={editText}
+        setEditText={setEditText}
+        editMeta={editMeta}
+        setEditMeta={(fn)=> setEditMeta(fn as any)}
+        statusColors={statusColors as any}
+        defaultGrey={defaultGrey}
+        onCancel={()=> setEditingId(null)}
+        onDelete={()=>{ const pid = editingId; setPins((prev) => prev.filter((x) => x.id !== pid)); setEditingId(null); }}
+        onSave={()=>{
+          const p = pins.find(pp => pp.id === editingId);
+          if (!p) { setEditingId(null); return; }
+          setPins((prev) => prev.map((x) => {
+            if (x.id !== p!.id) return x;
+            let next: any = { ...x, label: editText, kind: editKind, meta: editMeta };
+            if (editMeta?.status) next.status = editMeta.status;
+            if (solarView && x.kind !== editKind) {
+              const cx = 50, cy = 50;
+              const angle = Math.atan2(x.yPct - cy, x.xPct - cx);
+              const r = getRingRadiusForKind(editKind);
+              if (r > 0) {
+                next.xPct = cx + r * Math.cos(angle);
+                next.yPct = cy + r * Math.sin(angle);
+              }
+            }
+            return next;
+          }));
+          setEditingId(null);
+        }}
+      />
 
         {/* Today Tab */}
         {activeTab === 'today' && (
@@ -834,40 +774,23 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 onPinMouseDown={(id)=>setDraggingId(id)}
                 onPinDoubleClick={(p)=>{ setEditingId(p.id); setEditText(p.label); setEditKind(p.kind); setEditMeta({ ...(p.meta||{}), status: (p as any).status }); }}
               />
-              {quickAddOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-black/30" onClick={() => setQuickAddOpen(false)} />
-                  <div className="relative z-10 bg-white rounded-xl shadow-xl p-4 w-[360px]">
-                    <div className="text-sm font-medium mb-2">Quick add task</div>
-                    <input className="w-full border rounded px-2 py-1 text-sm mb-2" placeholder="Title" value={quickTitle} onChange={(e)=>setQuickTitle(e.target.value)} />
-                    <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
-                      <div>
-                        <div className="text-gray-600 mb-1">Start</div>
-                        <input className="w-full border rounded px-2 py-1" value={quickStartMin} onChange={(e)=>setQuickStartMin(Number(e.target.value)||0)} />
-                      </div>
-                      <div>
-                        <div className="text-gray-600 mb-1">Duration (min)</div>
-                        <input className="w-full border rounded px-2 py-1" value={quickDurationMin} onChange={(e)=>setQuickDurationMin(Number(e.target.value)||30)} />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mb-3">
-                      {[15,25,30,45,60].map(d=> (
-                        <button key={d} className={`px-2 py-1 rounded border text-xs ${quickDurationMin===d?'bg-gray-100':''}`} onClick={()=>setQuickDurationMin(d)}>{d}m</button>
-                      ))}
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <button className="text-sm px-2 py-1" onClick={()=> setQuickAddOpen(false)}>Cancel</button>
-                      <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded" onClick={()=>{
-                        const id = Math.random().toString(36).slice(2);
-                        const newPin: any = { id, label: quickTitle || 'New task', color: '#64748B', xPct: 50, yPct: 50, kind: 'task', status: 'yellow', meta: { avgStartMin: quickStartMin, avgDurationMin: quickDurationMin } };
-                        setPins((prev)=>[...prev, newPin]);
-                        setQuickAddOpen(false);
-                        setEditingId(id); setEditKind('task'); setEditText(newPin.label); setEditMeta(newPin.meta);
-                      }}>Save</button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <QuickAddModal
+                open={quickAddOpen}
+                quickTitle={quickTitle}
+                setQuickTitle={setQuickTitle}
+                quickStartMin={quickStartMin}
+                setQuickStartMin={setQuickStartMin}
+                quickDurationMin={quickDurationMin}
+                setQuickDurationMin={setQuickDurationMin}
+                onCancel={()=> setQuickAddOpen(false)}
+                onSave={()=>{
+                  const id = Math.random().toString(36).slice(2);
+                  const newPin: any = { id, label: quickTitle || 'New task', color: '#64748B', xPct: 50, yPct: 50, kind: 'task', status: 'yellow', meta: { avgStartMin: quickStartMin, avgDurationMin: quickDurationMin } };
+                  setPins((prev)=>[...prev, newPin]);
+                  setQuickAddOpen(false);
+                  setEditingId(id); setEditKind('task'); setEditText(newPin.label); setEditMeta(newPin.meta);
+                }}
+              />
               </>
               )}
             </LocalCard>
@@ -1037,60 +960,20 @@ const ConsolidatedLifeTracker: React.FC = () => {
         
 
         {/* Intent Quick Add Modal */}
-        {showIntentModal && selectedIntent && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md">
-              <h3 className="font-semibold mb-2">Quick add — {selectedIntent}</h3>
-              <input className="w-full border rounded px-3 py-2 text-sm" placeholder={`What is a 2–5 min step for ${selectedIntent}?`} />
-              <div className="flex justify-end gap-2 mt-4">
-                <button className="px-3 py-2 text-sm" onClick={() => setShowIntentModal(false)}>Cancel</button>
-                <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded" onClick={() => setShowIntentModal(false)}>Save</button>
-              </div>
-            </div>
-          </div>
-        )}
+        <IntentQuickAddModal
+          open={showIntentModal}
+          selectedIntent={selectedIntent}
+          onCancel={()=> setShowIntentModal(false)}
+          onSave={()=> setShowIntentModal(false)}
+        />
 
         {/* Stuck Moment Modal */}
-        {showStuckModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-              <h3 className="font-semibold mb-3">Feeling stuck</h3>
-              {!stuckCategory ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Self', 'Relationships', 'Faith'] as const).map((c) => (
-                    <button key={c} className="px-3 py-2 bg-gray-100 rounded text-sm hover:bg-gray-200" onClick={() => setStuckCategory(c)}>{c}</button>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-600">Category: {stuckCategory}</div>
-                  <div className="space-y-2">
-                    {(
-                      stuckCategory === 'Self' ? [
-                        'Stand up, sip water, one deep breath',
-                        'Set a 5‑min timer and do the first tiny step',
-                        'Write the next sentence only'
-                      ] : stuckCategory === 'Relationships' ? [
-                        'Send a 1‑line check‑in to someone you care about',
-                        'Draft the hard message; send a kind first line',
-                        'Schedule a 10‑min call'
-                      ] : [
-                        'Two‑minute quiet: “Here I am.”',
-                        'Read one verse; pick one word to carry',
-                        'Offer gratitude for one specific thing'
-                      ]
-                    ).map((s, i) => (
-                      <div key={i} className="p-3 bg-gray-50 rounded text-sm">• {s}</div>
-                    ))}
-                  </div>
-                  <div className="flex justify-end gap-2 mt-4">
-                    <button className="px-3 py-2 text-sm" onClick={() => { setShowStuckModal(false); setStuckCategory(null); }}>Close</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <StuckModal
+          open={showStuckModal}
+          stuckCategory={stuckCategory}
+          setStuckCategory={setStuckCategory as any}
+          onClose={()=> setShowStuckModal(false)}
+        />
 
         {/* Analytics section is currently disabled in this build. */}
 
