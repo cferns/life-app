@@ -23,7 +23,7 @@ const FiltersDrawer: React.FC<Props> = ({ show, onClose, showView1, setShowView1
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] bg-white shadow-xl p-4">
+      <div className="absolute inset-y-0 left-0 w-80 max-w-[85vw] shadow-xl p-4" style={{ background: 'var(--card-bg)' }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Filters</h2>
           <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={onClose} aria-label="Close filters"><X className="w-4 h-4"/></button>

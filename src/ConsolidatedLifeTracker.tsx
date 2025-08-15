@@ -448,7 +448,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
                 onResetZoom={()=> setZoom(1)}
               />
               {isFullscreen && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-white/80 backdrop-blur rounded-full px-4 py-2 shadow flex items-center gap-3">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 backdrop-blur rounded-full px-4 py-2 shadow flex items-center gap-3" style={{ background: 'color-mix(in srgb, var(--card-bg) 80%, transparent)' }}>
                   <span className="text-sm text-gray-700">Attention needed:</span>
                   {([['red','#EF4444'], ['yellow','#F59E0B'], ['green','#22C55E']] as const).map(([key, color]) => {
                     const selected = statusFilter.has(key as PinStatus);
@@ -456,7 +456,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
                       <button
                         key={key}
                         className={`w-10 h-6 rounded-full border flex items-center justify-center relative ${selected ? 'ring-2 ring-blue-200' : ''}`}
-                        style={{ background: '#ffffff', borderColor: '#e5e7eb' }}
+                        style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
                         onClick={() => setStatusFilter(prev => { const next = new Set(prev); if (next.has(key as PinStatus)) next.delete(key as PinStatus); else next.add(key as PinStatus); return next; })}
                         aria-label={`Filter ${key}`}
                       >

@@ -22,6 +22,8 @@
   --control-border: rgba(0,0,0,0.1);
 }
 
+html { background: var(--app-bg); }
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -50,6 +52,7 @@ h1 {
   margin: 0;
   padding: 0;
   text-align: initial;
+  background: var(--app-bg);
 }
 
 .logo {
@@ -98,6 +101,8 @@ body[data-theme="light"] {
   --control-bg: #F2F2F7;
   --control-text: #111827;
   --control-border: #E5E5EA;
+  --surface-bg: #FFFFFF;
+  --grid-color: #E5E5EA;
 }
 
 body[data-theme="warm"] {
@@ -111,6 +116,8 @@ body[data-theme="warm"] {
   --control-bg: #ffffff;
   --control-text: #3f3f46;
   --control-border: rgba(0,0,0,0.10);
+  --surface-bg: #ffffff;
+  --grid-color: #e5e7eb;
 }
 
 body[data-theme="dark"] {
@@ -124,6 +131,8 @@ body[data-theme="dark"] {
   --control-bg: #0B0B0C;
   --control-text: #E5E7EB;
   --control-border: #38383A;
+  --surface-bg: #111113;
+  --grid-color: #2C2C2E;
 }
 
 /* Custom is set dynamically via inline CSS vars; keep sensible fallbacks */
@@ -138,5 +147,7 @@ body[data-theme="custom"] {
   --control-bg: #ffffff;
   --control-text: #1f2937;
   --control-border: rgba(0,0,0,0.12);
+  --surface-bg: #ffffff;
+  --grid-color: #e5e7eb;
 }
 
