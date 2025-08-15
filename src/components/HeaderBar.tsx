@@ -8,7 +8,7 @@ type Props = {
 
 const HeaderBar: React.FC<Props> = ({ onOpenFilters, onOpenProfile }) => {
   return (
-    <div className="sticky top-0 z-50 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b">
+    <div className="sticky top-0 z-50 border-b" style={{ background: 'var(--card-bg)' }}>
       <div className="max-w-7xl mx-auto px-6 sm:px-9 py-3">
         <div className="flex items-center gap-3">
           <button className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center" onClick={onOpenFilters} aria-label="Open filters">

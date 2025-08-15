@@ -11,9 +11,11 @@ type Props = {
   syncState: 'synced' | 'pending' | 'offline';
   setSyncState: (v: 'synced' | 'pending' | 'offline') => void;
   onResetDemo?: () => void;
+  theme?: 'light' | 'warm' | 'dim' | 'aurora';
+  setTheme?: (t: 'light' | 'warm' | 'dim' | 'aurora') => void;
 };
 
-const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFaithModeEnabled, sabbathMode, setSabbathMode, syncState, setSyncState, onResetDemo }) => {
+const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFaithModeEnabled, sabbathMode, setSabbathMode, syncState, setSyncState, onResetDemo, theme = 'light', setTheme }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-50">
@@ -24,6 +26,16 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
           <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={onClose} aria-label="Close profile"><X className="w-4 h-4"/></button>
         </div>
         <div className="space-y-5 text-sm text-gray-800">
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-gray-500">Theme</div>
+            <div className="grid grid-cols-2 gap-2">
+              {(['light','warm','dim','aurora'] as const).map(t => (
+                <button key={t} className={`px-3 py-2 rounded-md border text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} onClick={()=> setTheme && setTheme(t)}>
+                  <div className="text-sm capitalize">{t}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="space-y-2">
             <div className="text-xs font-medium text-gray-500">Modes</div>
             <label className="flex items-center gap-2"><input type="checkbox" checked={faithModeEnabled} onChange={(e)=>setFaithModeEnabled(e.target.checked)} /> Faith mode (show Anchors)</label>

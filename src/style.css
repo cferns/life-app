@@ -9,6 +9,12 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Theme tokens */
+  --app-bg: #f8fafc;
+  --text: #0f172a;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --pill-bg: #f1f5f9;
 }
 
 a {
@@ -25,7 +31,8 @@ body {
   display: block;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f8fafc; /* Tailwind gray-50 */
+  background-color: var(--app-bg);
+  color: var(--text);
 }
 
 h1 {
@@ -73,3 +80,38 @@ button {}
   }
   button {}
 }
+
+/* Theme presets using data-theme attribute on body */
+body[data-theme="light"] {
+  --app-bg: #f8fafc;
+  --text: #0f172a;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --pill-bg: #f1f5f9;
+}
+
+body[data-theme="warm"] {
+  --app-bg: #fffaf4; /* cream */
+  --text: #2b2a28;
+  --card-bg: #fff7ed; /* orange-50 */
+  --card-border: #f5e0c3;
+  --pill-bg: #f9efe3;
+}
+
+body[data-theme="dim"] {
+  --app-bg: #0f172a; /* slate-900 */
+  --text: #e2e8f0;   /* slate-200 */
+  --card-bg: #111827; /* gray-900 */
+  --card-border: #374151; /* gray-700 */
+  --pill-bg: #1f2937; /* gray-800 */
+}
+
+/* Northern Lights (aurora) */
+body[data-theme="aurora"] {
+  --app-bg: linear-gradient(180deg, #0b1220 0%, #0b1220 30%, #132a36 100%);
+  --text: #e6f6ff;
+  --card-bg: rgba(17, 24, 39, 0.7);
+  --card-border: rgba(148, 163, 184, 0.35);
+  --pill-bg: rgba(15, 118, 110, 0.18);
+}
+

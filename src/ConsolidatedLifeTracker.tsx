@@ -37,6 +37,8 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [rootCausesPreview, setRootCausesPreview] = useState<string>('');
   const [faithModeEnabled, setFaithModeEnabled] = useState<boolean>(true);
   const [sabbathMode, setSabbathMode] = useState<boolean>(false);
+  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'aurora'>(() => (localStorage.getItem('udn_theme') as any) || 'light');
+  useEffect(()=>{ document.body.setAttribute('data-theme', theme); localStorage.setItem('udn_theme', theme); }, [theme]);
   const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
   const [selectedIntent, setSelectedIntent] = useState<'Eat/Rest' | 'Connect' | 'Decide' | null>(null);
   const [showStuckModal, setShowStuckModal] = useState<boolean>(false);
@@ -373,6 +375,8 @@ const ConsolidatedLifeTracker: React.FC = () => {
           syncState={syncState}
           setSyncState={setSyncState as any}
           onResetDemo={()=>{ localStorage.removeItem('udn_pins'); setPins(defaultPins); }}
+          theme={theme}
+          setTheme={setTheme}
         />
 
       {/* Global Edit Modal */}
