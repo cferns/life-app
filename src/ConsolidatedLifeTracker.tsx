@@ -6,10 +6,14 @@ import type { MapPin, PinKind, PinStatus } from './types';
 import Legend from './components/Legend';
 import MapView from './components/MapView';
 import SecondaryView from './components/SecondaryView';
-import { Clock, Plus, CheckCircle, Circle, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check, Menu, X } from 'lucide-react';
+import AvgDayTimeline from './components/AvgDayTimeline';
+import { Clock, Plus, Star, Coffee, Phone, Moon, Users, Compass, Heart, Maximize2, Minimize2, Check, Menu, X } from 'lucide-react';
 import FooterBar from './components/FooterBar';
 import FiltersDrawer from './components/FiltersDrawer';
 import ProfileDrawer from './components/ProfileDrawer';
+import QuickActions from './components/QuickActions';
+import TodaysStory from './components/TodaysStory';
+import AnchorsCard from './components/AnchorsCard';
 import GlobalEditModal from './components/GlobalEditModal';
 import QuickAddModal from './components/QuickAddModal';
 import IntentQuickAddModal from './components/IntentQuickAddModal';
@@ -250,148 +254,14 @@ const ConsolidatedLifeTracker: React.FC = () => {
     if (words.length <= 2) return words.join(' ');
     return `${words[0]} ${words[1]}…`;
   };
-  const minutesToTime = (min: number): string => {
-    const m = Math.max(0, Math.min(1439, Math.round(min)));
-    const h = Math.floor(m / 60);
-    const mm = m % 60;
-    const hh12 = ((h + 11) % 12) + 1;
-    const ampm = h < 12 ? 'AM' : 'PM';
-    return `${hh12}:${mm.toString().padStart(2, '0')} ${ampm}`;
-  };
-  // Avg-day drag state
-  const avgRef1 = useRef<HTMLDivElement | null>(null);
-  const avgRef2 = useRef<HTMLDivElement | null>(null);
-  const [dragAvg, setDragAvg] = useState<{ id: string; offset: number; which: 'v1' | 'v2' } | null>(null);
+  // minutesToTime moved into AvgDayTimeline component
   // Quick add (timeline)
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickTitle, setQuickTitle] = useState('');
   const [quickStartMin, setQuickStartMin] = useState(9 * 60);
   const [quickDurationMin, setQuickDurationMin] = useState(30);
-  useEffect(() => {
-    if (!dragAvg) return;
-    const onMove = (e: MouseEvent) => {
-      const ref = dragAvg.which === 'v1' ? avgRef1.current : avgRef2.current;
-      if (!ref) return;
-      const rect = ref.getBoundingClientRect();
-      const ratio = (e.clientY - rect.top) / rect.height; // vertical timeline
-      const minutes = Math.max(0, Math.min(1440, Math.round(ratio * 1440))) - dragAvg.offset;
-      setPins((prev) => prev.map((p) => {
-        if (p.id !== dragAvg.id) return p;
-        const meta = { ...(p as any).meta };
-        const dur = Math.max(0, meta.avgDurationMin ?? 30);
-        meta.avgStartMin = Math.max(0, Math.min(1440 - dur, minutes));
-        return { ...p, meta } as any;
-      }));
-    };
-    const onUp = () => setDragAvg(null);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [dragAvg]);
 
-  const renderAvgDayTimeline = (which: 'v1' | 'v2') => {
-    const containerRef = which === 'v1' ? avgRef1 : avgRef2;
-    type Block = { id: string; label: string; start: number; end: number };
-    let items: Block[] = pins
-      .filter((p) => p.kind === 'task' && (p as any).meta?.avgStartMin != null)
-      .map((p) => {
-        const start = Number((p as any).meta.avgStartMin) || 0;
-        const dur = Number((p as any).meta.avgDurationMin) || 30;
-        return { id: p.id, label: p.label, start, end: Math.min(1440, start + dur) };
-      })
-      .sort((a, b) => a.start - b.start);
-    // Fallback demo if no tasks tagged yet
-    if (items.length === 0) {
-      const demo = pins.filter(p => p.kind === 'task').slice(0, 6);
-      items = demo.map((p, i) => {
-        const start = 8 * 60 + i * 45; // from 8:00AM every 45m
-        const dur = 30;
-        return { id: p.id, label: p.label, start, end: Math.min(1440, start + dur) };
-      });
-    }
-    // lane assignment to avoid overlaps
-    const lanes: Block[][] = [];
-    for (const it of items) {
-      let placed = false;
-      for (const lane of lanes) {
-        if (lane.length === 0 || lane[lane.length - 1].end <= it.start) {
-          lane.push(it); placed = true; break;
-        }
-      }
-      if (!placed) lanes.push([it]);
-    }
-    const tickHours = [6, 9, 12, 15, 18, 21];
-    return (
-      <div
-        ref={containerRef}
-        className="relative w-full bg-white rounded-lg border p-3"
-        style={{ height: 400 }}
-        onDoubleClick={(e) => {
-          const ref = containerRef.current; if (!ref) return;
-          const rect = ref.getBoundingClientRect();
-          const ratio = (e.clientY - rect.top) / rect.height;
-          const start = Math.max(0, Math.min(1440, Math.round(ratio * 1440)));
-          setQuickAddOpen(true);
-          setQuickTitle('');
-          setQuickStartMin(start);
-          setQuickDurationMin(30);
-        }}
-      >
-        {/* Hour ticks horizontally across */}
-        <div className="absolute inset-3">
-          {tickHours.map((h) => {
-            const top = (h / 24) * 100;
-            return (
-              <div key={h} className="absolute left-0 right-0" style={{ top: `${top}%` }}>
-                <div className="w-full h-px bg-gray-200"></div>
-                <div className="absolute -left-1 text-xs -translate-y-1/2 text-gray-500">{minutesToTime(h * 60)}</div>
-              </div>
-            );
-          })}
-          {/* Lanes as columns */}
-          {lanes.map((lane, li) => {
-            const laneWidth = 100 / Math.max(1, lanes.length);
-            const left = li * laneWidth;
-            return (
-              <div key={li} className="absolute" style={{ left: `${left}%`, width: `${laneWidth}%`, top: 0, bottom: 0 }}>
-                {lane.map((b) => {
-                  const top = (b.start / 1440) * 100;
-                  const height = ((b.end - b.start) / 1440) * 100;
-                  return (
-                    <div
-                      key={b.id}
-                      className="absolute rounded-md bg-blue-100 border border-blue-200 flex items-center justify-center px-2 cursor-grab active:cursor-grabbing"
-                      style={{ top: `${top}%`, height: `${height}%`, left: '10%', right: '10%' }}
-                      onMouseDown={(e) => {
-                        const p = pins.find((x) => x.id === b.id)!;
-                        const start = Number((p as any).meta?.avgStartMin) || 0;
-                        const ref = containerRef.current;
-                        if (!ref) return;
-                        const rect = ref.getBoundingClientRect();
-                        const ratio = (e.clientY - rect.top) / rect.height;
-                        const cursorMin = Math.round(ratio * 1440);
-                        setDragAvg({ id: b.id, offset: cursorMin - start, which });
-                      }}
-                      onDoubleClick={() => {
-                        setEditingId(b.id);
-                        const p = pins.find((x) => x.id === b.id)!;
-                        setEditText(p.label); setEditKind(p.kind as any); setEditMeta({ ...(p as any).meta, status: (p as any).status });
-                      }}
-                    >
-                      <div className="text-[11px] text-blue-900 text-center leading-tight">
-                        <div>{minutesToTime(b.start)}</div>
-                        <div className="truncate max-w-[90%] mx-auto">{b.label}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  // Avg-day timeline moved into dedicated component
 
   // Load/save pins from localStorage so refresh uses the same objects
   useEffect(() => {
@@ -834,120 +704,20 @@ const ConsolidatedLifeTracker: React.FC = () => {
             )}
 
             {/* Quick Actions */}
-            <div className={`space-y-4 ${sabbathMode ? 'opacity-80 saturate-75' : ''}`}>
-              {/* Community-first: Who needs love today? */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h3 className="font-semibold mb-3">Who needs love today?</h3>
-                <div className="space-y-2">
-                  {heartConnections
-                    .slice()
-                    .sort((a, b) => b.days - a.days)
-                    .filter((c) => c.days > 0)
-                    .slice(0, 3)
-                    .map((c, i) => (
-                      <div key={i} className={`flex items-center justify-between p-3 rounded ${c.days > 7 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-lg">{c.emoji}</span>
-                          <div>
-                            <div className="font-medium">{c.name}</div>
-                            <div className="text-xs text-gray-500">{c.days} days since last touch</div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Call</button>
-                          <button className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Text</button>
-                        </div>
-                      </div>
-                  ))}
-                  {heartConnections.every((c) => c.days === 0) && (
-                    <div className="text-sm text-gray-600">All caught up. Consider a quick gratitude note.</div>
-                  )}
-                </div>
-              </div>
-               {/* Next Best Action */}
-               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold mb-3">Next</h3>
-              <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900">{nextBestActionByDeficit[primaryDeficit].title}</h4>
-                  <p className="text-sm text-blue-700 mt-1">Micro-steps: {nextBestActionByDeficit[primaryDeficit].micro}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex gap-2 text-xs">
-                      <span className="px-2 py-1 bg-white/70 rounded">Due soon</span>
-                      <span className="px-2 py-1 bg-white/70 rounded">Primary deficit: {primaryDeficit}</span>
-                      <span className="px-2 py-1 bg-white/70 rounded">Short win</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium">25:00</span>
-                    </div>
-                  </div>
-                  <button className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                    Start
-                  </button>
-                </div>
-              </div>
-
-              {/* Daily Scores */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h3 className="font-semibold mb-4">Daily Scores</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Energy</span>
-                    <span className="font-bold text-xl">{dailyScores.energy}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Peace</span>
-                    <span className="font-bold text-xl">{dailyScores.peace}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Gratitude</span>
-                    <span className="font-bold text-xl">{dailyScores.gratitude}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <QuickActions
+              heartConnections={heartConnections as any}
+              primaryDeficit={primaryDeficit}
+              nextBestActionByDeficit={nextBestActionByDeficit}
+              dailyScores={dailyScores}
+              sabbathMode={sabbathMode}
+            />
 
             {/* Today's Story */}
-            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <h3 className="font-semibold mb-4">Today's Story</h3>
-              <div className="space-y-4">
-                {todayStory.map((item, index) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className={`p-2 rounded-full ${getCategoryColor(item.category)}`}>
-                        <IconComponent className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm text-gray-500">{item.time}</div>
-                        <div className="text-gray-900">{item.activity}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="lg:col-span-2">
+              <TodaysStory items={todayStory as any} getCategoryColor={getCategoryColor} />
             </div>
 
-            {/* Anchors (faith mode) */}
-            {faithModeEnabled && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h3 className="font-semibold mb-4">Daily Anchors</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {anchors.map((anchor, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      {anchor.completed ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-gray-300" />
-                      )}
-                      <span className={`text-sm ${anchor.completed ? 'text-gray-900' : 'text-gray-500'}`}>
-                        {anchor.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AnchorsCard faithModeEnabled={faithModeEnabled} anchors={anchors as any} />
           </div>
         )}
 

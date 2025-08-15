@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React from 'react';
+import AvgDayTimeline from './AvgDayTimeline';
 
 type Props = {
   view2Mode: 'none' | 'map2d' | 'solar2d' | 'list' | 'avgday';
@@ -17,7 +18,9 @@ type Props = {
   autoOrganizePins: () => void;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
-  renderAvgDayTimeline: (which: 'v2') => React.ReactNode;
+  setPins: React.Dispatch<React.SetStateAction<any[]>>;
+  onOpenQuickAdd: (startMin: number) => void;
+  onEditPin: (id: string) => void;
 };
 
 const SecondaryView: React.FC<Props> = ({
@@ -36,7 +39,9 @@ const SecondaryView: React.FC<Props> = ({
   autoOrganizePins,
   zoom,
   setZoom,
-  renderAvgDayTimeline,
+  setPins,
+  onOpenQuickAdd,
+  onEditPin,
 }) => {
   return (
     <>
@@ -132,7 +137,7 @@ const SecondaryView: React.FC<Props> = ({
               ))}
             </div>
           </div>
-          {renderAvgDayTimeline('v2')}
+          <AvgDayTimeline which="v2" pins={pins} setPins={setPins} onOpenQuickAdd={onOpenQuickAdd} onEditPin={onEditPin} />
         </div>
       ) : view2Mode === 'none' ? (
         <div className="relative h-40 bg-gray-100 overflow-hidden rounded-lg">
