@@ -93,21 +93,27 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                     const black:[number,number,number]=[0,0,0];
                     const dominant = top[0] || [240,240,240];
                     const domLum = luminance(dominant);
-                    const appBg = domLum>0.6 ? blend(dominant, 0.5, white) : blend(dominant, 0.7, black);
+                    const appBg = domLum>0.6 ? blend(dominant, 0.58, white) : blend(dominant, 0.7, black);
                     const contrast = (rgb:[number,number,number])=>{ const L1=domLum; const L2=luminance(rgb); const c=(Math.max(L1,L2)+0.05)/(Math.min(L1,L2)+0.05); return c; };
                     const textRgb = (top.slice(1)[0]) || (domLum>0.6? [15,23,42]: [226,232,240]);
                     const text = contrast(textRgb)>4.0 ? toHex(textRgb as any) : (domLum>0.6? '#0f172a':'#e2e8f0');
-                    const cardBg = blend(dominant, domLum>0.6? 0.65: 0.3, white);
+                    const cardBg = blend(dominant, domLum>0.6? 0.7: 0.28, white);
                     const cardBorder = 'rgba(148,163,184,0.35)';
                     const pillBg = domLum>0.6? 'rgba(0,0,0,0.06)':'rgba(255,255,255,0.08)';
-                    document.body.setAttribute('data-theme','custom');
-                    document.body.style.setProperty('--app-bg', appBg);
-                    document.body.style.setProperty('--text', text);
-                    document.body.style.setProperty('--card-bg', cardBg);
-                    document.body.style.setProperty('--card-border', cardBorder as any);
-                    document.body.style.setProperty('--pill-bg', pillBg);
+                    const palette = { appBg, text, cardBg, cardBorder, pillBg, accentBg: '#475569', accentText: '#ffffff', controlBg: '#ffffff', controlText: '#1f2937', controlBorder: 'rgba(0,0,0,0.12)' };
                     localStorage.setItem('udn_theme','custom');
-                    localStorage.setItem('udn_theme_custom', JSON.stringify({appBg,text,cardBg,cardBorder,pillBg}));
+                    localStorage.setItem('udn_theme_custom', JSON.stringify(palette));
+                    document.body.setAttribute('data-theme','custom');
+                    document.body.style.setProperty('--app-bg', palette.appBg);
+                    document.body.style.setProperty('--text', palette.text);
+                    document.body.style.setProperty('--card-bg', palette.cardBg);
+                    document.body.style.setProperty('--card-border', palette.cardBorder);
+                    document.body.style.setProperty('--pill-bg', palette.pillBg);
+                    document.body.style.setProperty('--accent-bg', palette.accentBg);
+                    document.body.style.setProperty('--accent-text', palette.accentText);
+                    document.body.style.setProperty('--control-bg', palette.controlBg);
+                    document.body.style.setProperty('--control-text', palette.controlText);
+                    document.body.style.setProperty('--control-border', palette.controlBorder);
                   };
                   img.src = reader.result as string;
                 };
@@ -115,15 +121,18 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
               }} />
               <div className="mt-2 flex gap-2">
                 <button className="px-2 py-1 text-xs border rounded" onClick={()=>{
-                  const raw = localStorage.getItem('udn_theme_custom');
-                  if(!raw) return;
-                  const {appBg,text,cardBg,cardBorder,pillBg} = JSON.parse(raw);
+                  const raw = localStorage.getItem('udn_theme_custom'); if(!raw) return; let p: any; try{ p=JSON.parse(raw);}catch{return;}
                   document.body.setAttribute('data-theme','custom');
-                  document.body.style.setProperty('--app-bg', appBg);
-                  document.body.style.setProperty('--text', text);
-                  document.body.style.setProperty('--card-bg', cardBg);
-                  document.body.style.setProperty('--card-border', cardBorder);
-                  document.body.style.setProperty('--pill-bg', pillBg);
+                  document.body.style.setProperty('--app-bg', p.appBg);
+                  document.body.style.setProperty('--text', p.text);
+                  document.body.style.setProperty('--card-bg', p.cardBg);
+                  document.body.style.setProperty('--card-border', p.cardBorder);
+                  document.body.style.setProperty('--pill-bg', p.pillBg);
+                  document.body.style.setProperty('--accent-bg', p.accentBg);
+                  document.body.style.setProperty('--accent-text', p.accentText);
+                  document.body.style.setProperty('--control-bg', p.controlBg);
+                  document.body.style.setProperty('--control-text', p.controlText);
+                  document.body.style.setProperty('--control-border', p.controlBorder);
                   localStorage.setItem('udn_theme','custom');
                 }}>Apply saved</button>
                 <button className="px-2 py-1 text-xs border rounded" onClick={()=> setTheme && setTheme('light')}>Reset</button>

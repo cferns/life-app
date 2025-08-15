@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { applyThemeName, getStoredThemeName } from './theme';
 import ThreeSolarView from './ThreeSolarView';
 import Card from './components/Card';
 import type { MapPin, PinKind, PinStatus } from './types';
@@ -37,21 +38,8 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [rootCausesPreview, setRootCausesPreview] = useState<string>('');
   const [faithModeEnabled, setFaithModeEnabled] = useState<boolean>(true);
   const [sabbathMode, setSabbathMode] = useState<boolean>(false);
-  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'custom'>(() => (localStorage.getItem('udn_theme') as any) || 'light');
-  useEffect(()=>{
-    const savedCustom = localStorage.getItem('udn_theme_custom');
-    if(theme === 'custom' && savedCustom){
-      try{ const {appBg,text,cardBg,cardBorder,pillBg} = JSON.parse(savedCustom);
-        document.body.style.setProperty('--app-bg', appBg);
-        document.body.style.setProperty('--text', text);
-        document.body.style.setProperty('--card-bg', cardBg);
-        document.body.style.setProperty('--card-border', cardBorder);
-        document.body.style.setProperty('--pill-bg', pillBg);
-      }catch{}
-    }
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('udn_theme', theme);
-  }, [theme]);
+  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'custom'>(() => getStoredThemeName());
+  useEffect(()=>{ applyThemeName(theme); }, [theme]);
   const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
   const [selectedIntent, setSelectedIntent] = useState<'Eat/Rest' | 'Connect' | 'Decide' | null>(null);
   const [showStuckModal, setShowStuckModal] = useState<boolean>(false);
