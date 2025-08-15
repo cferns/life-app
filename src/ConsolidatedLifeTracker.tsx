@@ -37,7 +37,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [rootCausesPreview, setRootCausesPreview] = useState<string>('');
   const [faithModeEnabled, setFaithModeEnabled] = useState<boolean>(true);
   const [sabbathMode, setSabbathMode] = useState<boolean>(false);
-  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'aurora'>(() => (localStorage.getItem('udn_theme') as any) || 'light');
+  const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'custom'>(() => (localStorage.getItem('udn_theme') as any) || 'light');
   useEffect(()=>{
     const savedCustom = localStorage.getItem('udn_theme_custom');
     if(theme === 'custom' && savedCustom){

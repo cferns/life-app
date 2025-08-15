@@ -126,17 +126,17 @@ body[data-theme="dim"] {
   --control-border: rgba(148,163,184,0.35);
 }
 
-/* Northern Lights (aurora) */
-body[data-theme="aurora"] {
-  --app-bg: linear-gradient(180deg, #0b1220 0%, #0b1220 30%, #132a36 100%);
-  --text: #e6f6ff;
-  --card-bg: rgba(17, 24, 39, 0.7);
-  --card-border: rgba(148, 163, 184, 0.35);
-  --pill-bg: rgba(15, 118, 110, 0.18);
-  --accent-bg: #134e4a;
-  --accent-text: #e6f6ff;
-  --control-bg: rgba(255,255,255,0.9);
-  --control-text: #0b1220;
-  --control-border: rgba(148,163,184,0.35);
+/* Custom is set dynamically via inline CSS vars; keep sensible fallbacks */
+body[data-theme="custom"] {
+  --app-bg: #f1f5f9;
+  --text: #0f172a;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --pill-bg: #eef2f7;
+  --accent-bg: #475569;
+  --accent-text: #ffffff;
+  --control-bg: #ffffff;
+  --control-text: #1f2937;
+  --control-border: rgba(0,0,0,0.12);
 }
 

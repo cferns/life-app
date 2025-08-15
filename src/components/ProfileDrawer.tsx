@@ -11,20 +11,23 @@ type Props = {
   syncState: 'synced' | 'pending' | 'offline';
   setSyncState: (v: 'synced' | 'pending' | 'offline') => void;
   onResetDemo?: () => void;
-  theme?: 'light' | 'warm' | 'dim' | 'aurora';
-  setTheme?: (t: 'light' | 'warm' | 'dim' | 'aurora') => void;
+  theme?: 'light' | 'warm' | 'dim' | 'custom' | 'aurora';
+  setTheme?: (t: 'light' | 'warm' | 'dim' | 'custom' | 'aurora') => void;
 };
 
 const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFaithModeEnabled, sabbathMode, setSabbathMode, syncState, setSyncState, onResetDemo, theme = 'light', setTheme }) => {
-  const previews: Record<'light'|'warm'|'dim'|'aurora', {appBg:string; accent:string; cardBg:string; controlBg:string; controlBorder:string}> = {
+  const readCustom = ()=>{
+    try { const raw = localStorage.getItem('udn_theme_custom'); if(!raw) return null; return JSON.parse(raw); } catch { return null; }
+  };
+  const previews: Record<'light'|'warm'|'dim'|'custom', {appBg:string; accent:string; cardBg:string; controlBg:string; controlBorder:string}> = {
     light: { appBg: '#f8fafc', accent: '#b8403b', cardBg: '#ffffff', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' },
     warm:  { appBg: '#fffaf4', accent: '#c2412d', cardBg: '#fff7ed', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.10)' },
     dim:   { appBg: '#0f172a', accent: '#334155', cardBg: '#111827', controlBg: '#0b1220', controlBorder: 'rgba(148,163,184,0.35)' },
-    aurora:{ appBg: '#0b1220', accent: '#134e4a', cardBg: '#111827', controlBg: 'rgba(255,255,255,0.9)', controlBorder: 'rgba(148,163,184,0.35)' },
+    custom: (()=>{ const c = readCustom(); return c ? { appBg: c.appBg, accent: '#475569', cardBg: c.cardBg, controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' } : { appBg: '#f1f5f9', accent: '#475569', cardBg: '#ffffff', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' }; })(),
   };
-  const [openTheme, setOpenTheme] = useState(true);
-  const [openModes, setOpenModes] = useState(true);
-  const [openSync, setOpenSync] = useState(true);
+  const [openTheme, setOpenTheme] = useState(false);
+  const [openModes, setOpenModes] = useState(false);
+  const [openSync, setOpenSync] = useState(false);
   const [openData, setOpenData] = useState(false);
   if (!show) return null;
   return (
@@ -44,7 +47,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
             </button>
             {openTheme && (
             <div className="mt-2 grid grid-cols-2 gap-3">
-              {(['light','warm','dim','aurora'] as const).map(t => (
+              {(['light','warm','dim','custom'] as const).map(t => (
                 <button key={t} onClick={()=> setTheme && setTheme(t)} className={`rounded-xl border relative text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} style={{ padding: 8, borderColor: '#e5e7eb' }}>
                   <div style={{ width: '100%', height: 84, borderRadius: 12, background: previews[t].appBg, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ height: 18, background: previews[t].accent }} />
@@ -56,6 +59,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
               ))}
             </div>
             )}
+            {openTheme && (
             <div className="pt-3">
               <label className="text-xs font-medium text-gray-500 block mb-1">Custom (photo)</label>
               <input type="file" accept="image/*" onChange={(e)=>{
@@ -125,6 +129,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                 <button className="px-2 py-1 text-xs border rounded" onClick={()=> setTheme && setTheme('light')}>Reset</button>
               </div>
             </div>
+            )}
           </div>
           {/* Modes collapsible */}
           <div>
