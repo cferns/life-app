@@ -48,7 +48,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
             {openTheme && (
             <div className="mt-2 grid grid-cols-2 gap-3">
               {(['light','dark','warm','custom'] as const).map(t => (
-                <button key={t} onClick={()=> setTheme && setTheme(t)} className={`rounded-xl border relative text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} style={{ padding: 8, borderColor: '#e5e7eb' }}>
+                <button key={t} onClick={()=> setTheme && setTheme(t)} className={`rounded-xl border relative text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} style={{ padding: 8, borderColor: '#e5e7eb', background: previews[t].appBg }}>
                   <div style={{ width: '100%', height: 84, borderRadius: 12, background: previews[t].appBg, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ height: 18, background: previews[t].accent }} />
                     <div style={{ position: 'absolute', top: 10, right: 10, height: 16, width: 36, borderRadius: 9999, background: previews[t].controlBg, border: `1px solid ${previews[t].controlBorder}` }} />
