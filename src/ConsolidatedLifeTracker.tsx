@@ -363,7 +363,17 @@ const ConsolidatedLifeTracker: React.FC = () => {
           setShowAnchors={setShowAnchorsCard}
         />
 
-        <ProfileDrawer show={showProfile} onClose={()=>setShowProfile(false)} />
+        <ProfileDrawer
+          show={showProfile}
+          onClose={()=>setShowProfile(false)}
+          faithModeEnabled={faithModeEnabled}
+          setFaithModeEnabled={setFaithModeEnabled}
+          sabbathMode={sabbathMode}
+          setSabbathMode={setSabbathMode}
+          syncState={syncState}
+          setSyncState={setSyncState as any}
+          onResetDemo={()=>{ localStorage.removeItem('udn_pins'); setPins(defaultPins); }}
+        />
 
       {/* Global Edit Modal */}
       <GlobalEditModal

@@ -4,9 +4,16 @@ import { X } from 'lucide-react';
 type Props = {
   show: boolean;
   onClose: () => void;
+  faithModeEnabled: boolean;
+  setFaithModeEnabled: (v: boolean) => void;
+  sabbathMode: boolean;
+  setSabbathMode: (v: boolean) => void;
+  syncState: 'synced' | 'pending' | 'offline';
+  setSyncState: (v: 'synced' | 'pending' | 'offline') => void;
+  onResetDemo?: () => void;
 };
 
-const ProfileDrawer: React.FC<Props> = ({ show, onClose }) => {
+const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFaithModeEnabled, sabbathMode, setSabbathMode, syncState, setSyncState, onResetDemo }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-50">
@@ -16,10 +23,28 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose }) => {
           <h2 className="text-2xl font-semibold">Profile</h2>
           <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={onClose} aria-label="Close profile"><X className="w-4 h-4"/></button>
         </div>
-        <div className="space-y-3 text-sm text-gray-700">
-          <div><input type="checkbox" className="mr-2"/> Option A</div>
-          <div><input type="checkbox" className="mr-2"/> Option B</div>
-          <div><input type="checkbox" className="mr-2"/> Option C</div>
+        <div className="space-y-5 text-sm text-gray-800">
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-gray-500">Modes</div>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={faithModeEnabled} onChange={(e)=>setFaithModeEnabled(e.target.checked)} /> Faith mode (show Anchors)</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={sabbathMode} onChange={(e)=>setSabbathMode(e.target.checked)} /> Sabbath mode (calm visuals)</label>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-gray-500">Sync status</div>
+            <div className="flex items-center gap-3">
+              {(['synced','pending','offline'] as const).map(s => (
+                <label key={s} className="flex items-center gap-1">
+                  <input type="radio" name="syncstate" checked={syncState===s} onChange={()=>setSyncState(s)} />
+                  <span className="capitalize">{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {onResetDemo && (
+            <div className="pt-2">
+              <button className="text-sm px-3 py-2 border rounded-md" onClick={onResetDemo}>Reset demo data</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
