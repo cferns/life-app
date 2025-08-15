@@ -123,6 +123,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                 <button className="px-2 py-1 text-xs border rounded" onClick={()=>{
                   const raw = localStorage.getItem('udn_theme_custom'); if(!raw) return; let p: any; try{ p=JSON.parse(raw);}catch{return;}
                   document.body.setAttribute('data-theme','custom');
+                  ['--app-bg','--text','--card-bg','--card-border','--pill-bg','--accent-bg','--accent-text','--control-bg','--control-text','--control-border'].forEach(k=>document.body.style.removeProperty(k));
                   document.body.style.setProperty('--app-bg', p.appBg);
                   document.body.style.setProperty('--text', p.text);
                   document.body.style.setProperty('--card-bg', p.cardBg);

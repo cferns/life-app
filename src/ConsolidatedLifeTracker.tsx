@@ -40,6 +40,8 @@ const ConsolidatedLifeTracker: React.FC = () => {
   const [sabbathMode, setSabbathMode] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'warm' | 'dim' | 'custom'>(() => getStoredThemeName());
   useEffect(()=>{ applyThemeName(theme); }, [theme]);
+  // Ensure initial mount applies stored theme cleanly
+  useEffect(()=>{ applyThemeName(getStoredThemeName()); }, []);
   const [showIntentModal, setShowIntentModal] = useState<boolean>(false);
   const [selectedIntent, setSelectedIntent] = useState<'Eat/Rest' | 'Connect' | 'Decide' | null>(null);
   const [showStuckModal, setShowStuckModal] = useState<boolean>(false);

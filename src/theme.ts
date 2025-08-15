@@ -66,6 +66,9 @@ export const setStoredCustomPalette = (p: ThemePalette) => localStorage.setItem(
 export function applyPalette(p: ThemePalette, name: ThemeName) {
   const b = document.body;
   b.setAttribute('data-theme', name);
+  // Clear any stale inline vars first
+  const keys = ['--app-bg','--text','--card-bg','--card-border','--pill-bg','--accent-bg','--accent-text','--control-bg','--control-text','--control-border'];
+  keys.forEach(k=>b.style.removeProperty(k));
   b.style.setProperty('--app-bg', p.appBg);
   b.style.setProperty('--text', p.text);
   b.style.setProperty('--card-bg', p.cardBg);
