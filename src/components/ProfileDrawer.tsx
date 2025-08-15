@@ -1,5 +1,5 @@
-import React from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ChevronDown } from 'lucide-react';
 
 type Props = {
   show: boolean;
@@ -16,6 +16,16 @@ type Props = {
 };
 
 const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFaithModeEnabled, sabbathMode, setSabbathMode, syncState, setSyncState, onResetDemo, theme = 'light', setTheme }) => {
+  const previews: Record<'light'|'warm'|'dim'|'aurora', {appBg:string; accent:string; cardBg:string; controlBg:string; controlBorder:string}> = {
+    light: { appBg: '#f8fafc', accent: '#b8403b', cardBg: '#ffffff', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' },
+    warm:  { appBg: '#fffaf4', accent: '#c2412d', cardBg: '#fff7ed', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.10)' },
+    dim:   { appBg: '#0f172a', accent: '#334155', cardBg: '#111827', controlBg: '#0b1220', controlBorder: 'rgba(148,163,184,0.35)' },
+    aurora:{ appBg: '#0b1220', accent: '#134e4a', cardBg: '#111827', controlBg: 'rgba(255,255,255,0.9)', controlBorder: 'rgba(148,163,184,0.35)' },
+  };
+  const [openTheme, setOpenTheme] = useState(true);
+  const [openModes, setOpenModes] = useState(true);
+  const [openSync, setOpenSync] = useState(true);
+  const [openData, setOpenData] = useState(false);
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-50">
@@ -26,16 +36,27 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
           <button className="w-8 h-8 rounded-md border flex items-center justify-center" onClick={onClose} aria-label="Close profile"><X className="w-4 h-4"/></button>
         </div>
         <div className="space-y-5 text-sm text-gray-800">
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-gray-500">Theme</div>
-            <div className="grid grid-cols-2 gap-2">
+          {/* Theme collapsible */}
+          <div>
+            <button className="w-full flex items-center justify-between py-1" onClick={()=>setOpenTheme(v=>!v)}>
+              <div className="text-base font-medium">Theme</div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${openTheme ? 'rotate-180' : ''}`} />
+            </button>
+            {openTheme && (
+            <div className="mt-2 grid grid-cols-2 gap-3">
               {(['light','warm','dim','aurora'] as const).map(t => (
-                <button key={t} className={`px-3 py-2 rounded-md border text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} onClick={()=> setTheme && setTheme(t)}>
-                  <div className="text-sm capitalize">{t}</div>
+                <button key={t} onClick={()=> setTheme && setTheme(t)} className={`rounded-xl border relative text-left ${theme===t ? 'ring-2 ring-blue-300' : ''}`} style={{ padding: 8, borderColor: '#e5e7eb' }}>
+                  <div style={{ width: '100%', height: 84, borderRadius: 12, background: previews[t].appBg, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ height: 18, background: previews[t].accent }} />
+                    <div style={{ position: 'absolute', top: 10, right: 10, height: 16, width: 36, borderRadius: 9999, background: previews[t].controlBg, border: `1px solid ${previews[t].controlBorder}` }} />
+                    <div style={{ position: 'absolute', top: 36, left: 10, right: 10, height: 32, borderRadius: 12, background: previews[t].cardBg, boxShadow: '0 1px 0 rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }} />
+                  </div>
+                  <div className="mt-2 text-xs capitalize" style={{ color: '#4b5563' }}>{t}</div>
                 </button>
               ))}
             </div>
-            <div className="pt-2">
+            )}
+            <div className="pt-3">
               <label className="text-xs font-medium text-gray-500 block mb-1">Custom (photo)</label>
               <input type="file" accept="image/*" onChange={(e)=>{
                 const file = e.target.files?.[0];
@@ -105,14 +126,27 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
               </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-gray-500">Modes</div>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={faithModeEnabled} onChange={(e)=>setFaithModeEnabled(e.target.checked)} /> Faith mode (show Anchors)</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={sabbathMode} onChange={(e)=>setSabbathMode(e.target.checked)} /> Sabbath mode (calm visuals)</label>
+          {/* Modes collapsible */}
+          <div>
+            <button className="w-full flex items-center justify-between py-1" onClick={()=>setOpenModes(v=>!v)}>
+              <div className="text-base font-medium">Modes</div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${openModes ? 'rotate-180' : ''}`} />
+            </button>
+            {openModes && (
+            <div className="mt-2 space-y-2">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={faithModeEnabled} onChange={(e)=>setFaithModeEnabled(e.target.checked)} /> Faith mode (show Anchors)</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={sabbathMode} onChange={(e)=>setSabbathMode(e.target.checked)} /> Sabbath mode (calm visuals)</label>
+            </div>
+            )}
           </div>
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-gray-500">Sync status</div>
-            <div className="flex items-center gap-3">
+          {/* Sync collapsible */}
+          <div>
+            <button className="w-full flex items-center justify-between py-1" onClick={()=>setOpenSync(v=>!v)}>
+              <div className="text-base font-medium">Sync status</div>
+              <ChevronDown className={`w-4 h-4 transition-transform ${openSync ? 'rotate-180' : ''}`} />
+            </button>
+            {openSync && (
+            <div className="mt-2 flex items-center gap-3">
               {(['synced','pending','offline'] as const).map(s => (
                 <label key={s} className="flex items-center gap-1">
                   <input type="radio" name="syncstate" checked={syncState===s} onChange={()=>setSyncState(s)} />
@@ -120,10 +154,20 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                 </label>
               ))}
             </div>
+            )}
           </div>
+          {/* Data collapsible */}
           {onResetDemo && (
-            <div className="pt-2">
-              <button className="text-sm px-3 py-2 border rounded-md" onClick={onResetDemo}>Reset demo data</button>
+            <div>
+              <button className="w-full flex items-center justify-between py-1" onClick={()=>setOpenData(v=>!v)}>
+                <div className="text-base font-medium">Data</div>
+                <ChevronDown className={`w-4 h-4 transition-transform ${openData ? 'rotate-180' : ''}`} />
+              </button>
+              {openData && (
+              <div className="mt-2">
+                <button className="text-sm px-3 py-2 border rounded-md" onClick={onResetDemo}>Reset demo data</button>
+              </div>
+              )}
             </div>
           )}
         </div>
