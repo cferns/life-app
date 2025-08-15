@@ -82,6 +82,8 @@ export function applyPalette(p: ThemePalette, name: ThemeName) {
   b.style.setProperty('--control-bg', p.controlBg);
   b.style.setProperty('--control-text', p.controlText);
   b.style.setProperty('--control-border', p.controlBorder);
+  // Force reflow to ensure CSS vars apply instantly across components
+  void b.offsetHeight;
 }
 
 export function applyThemeName(name: ThemeName) {

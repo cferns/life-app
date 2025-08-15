@@ -23,7 +23,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
     light: { appBg: '#F2F2F7', accent: '#FFFFFF', cardBg: '#FFFFFF', controlBg: '#F2F2F7', controlBorder: '#E5E5EA' },
     warm:  { appBg: '#fffaf4', accent: '#fff7ed', cardBg: '#fff7ed', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.10)' },
     dark:  { appBg: '#000000', accent: '#1C1C1E', cardBg: '#1C1C1E', controlBg: '#0B0B0C', controlBorder: '#38383A' },
-    custom: (()=>{ const c = readCustom(); return c ? { appBg: c.appBg, accent: '#475569', cardBg: c.cardBg, controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' } : { appBg: '#f1f5f9', accent: '#475569', cardBg: '#ffffff', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' }; })(),
+    custom: (()=>{ const c = readCustom(); return c ? { appBg: c.appBg, accent: c.accentBg || '#8b1d1d', cardBg: c.cardBg, controlBg: c.controlBg || '#ffffff', controlBorder: c.controlBorder || 'rgba(0,0,0,0.12)' } : { appBg: '#f1f5f9', accent: '#8b1d1d', cardBg: '#ffffff', controlBg: '#ffffff', controlBorder: 'rgba(0,0,0,0.12)' }; })(),
   };
   const [openTheme, setOpenTheme] = useState(false);
   const [openModes, setOpenModes] = useState(false);
@@ -100,7 +100,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                     const cardBg = blend(dominant, domLum>0.6? 0.7: 0.28, white);
                     const cardBorder = 'rgba(148,163,184,0.35)';
                     const pillBg = domLum>0.6? 'rgba(0,0,0,0.06)':'rgba(255,255,255,0.08)';
-                    const palette = { appBg, text, cardBg, cardBorder, pillBg, accentBg: '#475569', accentText: '#ffffff', controlBg: '#ffffff', controlText: '#1f2937', controlBorder: 'rgba(0,0,0,0.12)' };
+                    const palette = { appBg, text, cardBg, cardBorder, pillBg, accentBg: '#8b1d1d', accentText: '#ffffff', controlBg: '#ffffff', controlText: '#1f2937', controlBorder: 'rgba(0,0,0,0.12)' };
                     localStorage.setItem('udn_theme','custom');
                     localStorage.setItem('udn_theme_custom', JSON.stringify(palette));
                     document.body.setAttribute('data-theme','custom');
