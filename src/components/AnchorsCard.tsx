@@ -11,7 +11,7 @@ type Props = {
 const AnchorsCard: React.FC<Props> = ({ faithModeEnabled, anchors }) => {
   if (!faithModeEnabled) return null;
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+    <div className="rounded-2xl p-6 shadow-sm border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
       <h3 className="font-semibold mb-4">Daily Anchors</h3>
       <div className="grid grid-cols-2 gap-2">
         {anchors.map((anchor, index) => (

@@ -9,7 +9,7 @@ type Props = {
 
 const TodaysStory: React.FC<Props> = ({ items, getCategoryColor }) => {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+    <div className="rounded-2xl p-6 shadow-sm border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
       <h3 className="font-semibold mb-4">Today's Story</h3>
       <div className="space-y-4">
         {items.map((item, index) => {

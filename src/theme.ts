@@ -72,6 +72,14 @@ export function applyPalette(p: ThemePalette, name: ThemeName) {
   // Clear any stale inline vars first
   const keys = ['--app-bg','--text','--card-bg','--card-border','--pill-bg','--accent-bg','--accent-text','--control-bg','--control-text','--control-border'];
   keys.forEach(k=>b.style.removeProperty(k));
+  // Ensure text contrast: if appBg is bright, choose dark text; else light text
+  try {
+    const hex = p.appBg.startsWith('#') ? p.appBg : '#ffffff';
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), bl = parseInt(hex.slice(5,7),16);
+    const luminance = (v:number)=>{v/=255; return v<=0.03928? v/12.92: Math.pow((v+0.055)/1.055,2.4);};
+    const L = 0.2126*luminance(r)+0.7152*luminance(g)+0.0722*luminance(bl);
+    if (!p.text) p.text = L > 0.6 ? '#111827' : '#E5E7EB';
+  } catch {}
   b.style.setProperty('--app-bg', p.appBg);
   b.style.setProperty('--text', p.text);
   b.style.setProperty('--card-bg', p.cardBg);

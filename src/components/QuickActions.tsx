@@ -14,7 +14,7 @@ type Props = {
 const QuickActions: React.FC<Props> = ({ heartConnections, primaryDeficit, nextBestActionByDeficit, dailyScores, sabbathMode }) => {
   return (
     <div className={`space-y-4 ${sabbathMode ? 'opacity-80 saturate-75' : ''}`}>
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div className="rounded-2xl p-6 shadow-sm border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
         <h3 className="font-semibold mb-3">Who needs love today?</h3>
         <div className="space-y-2">
           {heartConnections
@@ -43,7 +43,7 @@ const QuickActions: React.FC<Props> = ({ heartConnections, primaryDeficit, nextB
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div className="rounded-2xl p-6 shadow-sm border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
         <h3 className="font-semibold mb-3">Next</h3>
         <div className="p-4 bg-blue-50 rounded-lg">
           <h4 className="font-medium text-blue-900">{nextBestActionByDeficit[primaryDeficit].title}</h4>
@@ -65,7 +65,7 @@ const QuickActions: React.FC<Props> = ({ heartConnections, primaryDeficit, nextB
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div className="rounded-2xl p-6 shadow-sm border" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
         <h3 className="font-semibold mb-4">Daily Scores</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center">

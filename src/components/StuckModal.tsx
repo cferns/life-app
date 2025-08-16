@@ -11,7 +11,7 @@ const StuckModal: React.FC<Props> = ({ open, stuckCategory, setStuckCategory, on
   if (!open) return null;
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+      <div className="rounded-xl p-6 w-full max-w-lg" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
         <h3 className="font-semibold mb-3">Feeling stuck</h3>
         {!stuckCategory ? (
           <div className="grid grid-cols-3 gap-2">

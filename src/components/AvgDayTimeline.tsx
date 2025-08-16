@@ -82,8 +82,8 @@ const AvgDayTimeline: React.FC<Props> = ({ which, pins, setPins, onOpenQuickAdd,
   return (
     <div
       ref={containerRef}
-      className="relative w-full bg-white rounded-lg border p-3"
-      style={{ height }}
+      className="relative w-full rounded-lg border p-3"
+      style={{ height, background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
       onDoubleClick={(e) => {
         const ref = containerRef.current; if (!ref) return;
         const rect = ref.getBoundingClientRect();

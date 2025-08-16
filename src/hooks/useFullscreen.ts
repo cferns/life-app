@@ -5,20 +5,30 @@ export function useFullscreen(targetRef: React.RefObject<HTMLElement>) {
 
   const toggleFullscreen = async () => {
     try {
-      if (!document.fullscreenElement) {
-        await targetRef.current?.requestFullscreen?.();
-        setIsFullscreen(true);
+      const el = targetRef.current || document.documentElement;
+      const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      if (!isFs) {
+        const req = (el as any).requestFullscreen || (el as any).webkitRequestFullscreen || (el as any).mozRequestFullScreen || (el as any).msRequestFullscreen;
+        if (req) await req.call(el);
       } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
+        const exit = (document as any).exitFullscreen || (document as any).webkitExitFullscreen || (document as any).mozCancelFullScreen || (document as any).msExitFullscreen;
+        if (exit) await exit.call(document);
       }
+      // state will be synced by the 'fullscreenchange' listener
     } catch {}
   };
 
   useEffect(() => {
-    const onFullChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFullChange = () => {
+      const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isFs);
+    };
     document.addEventListener('fullscreenchange', onFullChange);
-    return () => document.removeEventListener('fullscreenchange', onFullChange);
+    document.addEventListener('webkitfullscreenchange', onFullChange as any);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullChange);
+      document.removeEventListener('webkitfullscreenchange', onFullChange as any);
+    };
   }, []);
 
   return { isFullscreen, toggleFullscreen } as const;

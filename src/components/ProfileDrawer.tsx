@@ -52,7 +52,7 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                   <div style={{ width: '100%', height: 84, borderRadius: 12, background: previews[t].appBg, position: 'relative', overflow: 'hidden' }}>
                     <div style={{ height: 18, background: previews[t].accent }} />
                     <div style={{ position: 'absolute', top: 10, right: 10, height: 16, width: 36, borderRadius: 9999, background: previews[t].controlBg, border: `1px solid ${previews[t].controlBorder}` }} />
-                    <div style={{ position: 'absolute', top: 36, left: 10, right: 10, height: 32, borderRadius: 12, background: previews[t].cardBg, boxShadow: '0 1px 0 rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.06)' }} />
+                    <div style={{ position: 'absolute', top: 36, left: 10, right: 10, height: 32, borderRadius: 12, background: previews[t].cardBg, boxShadow: 'none', border: 'none' }} />
                   </div>
                   <div className="mt-2 text-xs capitalize" style={{ color: '#4b5563' }}>{t}</div>
                 </button>
@@ -100,7 +100,12 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                     const cardBg = blend(dominant, domLum>0.6? 0.7: 0.28, white);
                     const cardBorder = 'rgba(148,163,184,0.35)';
                     const pillBg = domLum>0.6? 'rgba(0,0,0,0.06)':'rgba(255,255,255,0.08)';
-                    const palette = { appBg, text, cardBg, cardBorder, pillBg, accentBg: '#8b1d1d', accentText: '#ffffff', controlBg: '#ffffff', controlText: '#1f2937', controlBorder: 'rgba(0,0,0,0.12)' };
+                    // Build accent by darkening dominant instead of using a fixed color
+                    const rgbToHsl = (r:number,g:number,b:number)=>{ r/=255; g/=255; b/=255; const max=Math.max(r,g,b), min=Math.min(r,g,b); let h=0,s=0,l=(max+min)/2; if(max!==min){ const d=max-min; s=l>0.5? d/(2-max-min): d/(max+min); switch(max){ case r:h=(g-b)/d+(g<b?6:0); break; case g:h=(b-r)/d+2; break; case b:h=(r-g)/d+4; break;} h/=6; } return [h,s,l] as [number,number,number]; };
+                    const hslToHex = (h:number,s:number,l:number)=>{ const f=(n:number)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); const c=l-a*Math.max(-1,Math.min(k-3,Math.min(9-k,1))); return Math.round(255*c).toString(16).padStart(2,'0'); }; return `#${f(0)}${f(8)}${f(4)}`; };
+                    const [h,s,l] = rgbToHsl(dominant[0],dominant[1],dominant[2]);
+                    const accentBg = hslToHex(h, Math.min(1, s*0.9+0.1), Math.max(0, l*0.45));
+                    const palette = { appBg, text, cardBg, cardBorder, pillBg, accentBg, accentText: '#ffffff', controlBg: '#ffffff', controlText: '#1f2937', controlBorder: 'rgba(0,0,0,0.12)' };
                     localStorage.setItem('udn_theme','custom');
                     localStorage.setItem('udn_theme_custom', JSON.stringify(palette));
                     document.body.setAttribute('data-theme','custom');
@@ -114,30 +119,13 @@ const ProfileDrawer: React.FC<Props> = ({ show, onClose, faithModeEnabled, setFa
                     document.body.style.setProperty('--control-bg', palette.controlBg);
                     document.body.style.setProperty('--control-text', palette.controlText);
                     document.body.style.setProperty('--control-border', palette.controlBorder);
+                    if (typeof setTheme === 'function') setTheme('custom');
                   };
                   img.src = reader.result as string;
                 };
                 reader.readAsDataURL(file);
               }} />
-              <div className="mt-2 flex gap-2">
-                <button className="px-2 py-1 text-xs border rounded" onClick={()=>{
-                  const raw = localStorage.getItem('udn_theme_custom'); if(!raw) return; let p: any; try{ p=JSON.parse(raw);}catch{return;}
-                  document.body.setAttribute('data-theme','custom');
-                  ['--app-bg','--text','--card-bg','--card-border','--pill-bg','--accent-bg','--accent-text','--control-bg','--control-text','--control-border'].forEach(k=>document.body.style.removeProperty(k));
-                  document.body.style.setProperty('--app-bg', p.appBg);
-                  document.body.style.setProperty('--text', p.text);
-                  document.body.style.setProperty('--card-bg', p.cardBg);
-                  document.body.style.setProperty('--card-border', p.cardBorder);
-                  document.body.style.setProperty('--pill-bg', p.pillBg);
-                  document.body.style.setProperty('--accent-bg', p.accentBg);
-                  document.body.style.setProperty('--accent-text', p.accentText);
-                  document.body.style.setProperty('--control-bg', p.controlBg);
-                  document.body.style.setProperty('--control-text', p.controlText);
-                  document.body.style.setProperty('--control-border', p.controlBorder);
-                  localStorage.setItem('udn_theme','custom');
-                }}>Apply saved</button>
-                <button className="px-2 py-1 text-xs border rounded" onClick={()=> setTheme && setTheme('light')}>Reset</button>
-              </div>
+              {/* Apply/Reset buttons removed by request */}
             </div>
             )}
           </div>

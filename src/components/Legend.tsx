@@ -37,8 +37,8 @@ const Legend: React.FC<Props> = ({ items, legendFilter, onToggleKind, statusFilt
           );
         })}
       </div>
-      <div className="mt-3 flex items-center gap-3">
-        <span className="text-sm text-gray-700">Attention needed:</span>
+      <div className="mt-3 flex items-center gap-3" style={{ color: 'var(--text)' }}>
+        <span className="text-sm">Attention needed:</span>
         {([['red','#EF4444'], ['yellow','#F59E0B'], ['green','#22C55E']] as const).map(([key, color]) => {
           const selected = statusFilter.has(key as PinStatus);
           return (

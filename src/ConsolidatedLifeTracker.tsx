@@ -344,7 +344,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
   }, [viewType]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-0">
+    <div className="min-h-screen p-0" style={{ background: 'var(--app-bg)' }}>
       <HeaderBar
         syncState={syncState}
         onOpenFilters={()=>setShowFilters(true)}
@@ -423,7 +423,7 @@ const ConsolidatedLifeTracker: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Visualization Panel (center stage) */}
             {showView1 && (
-            <LocalCard className="lg:col-span-2 p-0 overflow-hidden relative">
+            <LocalCard className="lg:col-span-2 p-0 overflow-hidden relative" ref={panelRef as any}>
               {isFullscreen && (
                 <div className="absolute top-3 left-3 z-10">
                   <select
@@ -601,14 +601,14 @@ const ConsolidatedLifeTracker: React.FC = () => {
             {showStory && (
               <div className="lg:col-span-2">
                 <TodaysStory items={todayStory as any} getCategoryColor={getCategoryColor} />
-              </div>
+                      </div>
             )}
 
             {showAnchorsCard && (
               <AnchorsCard faithModeEnabled={faithModeEnabled} anchors={anchors as any} />
             )}
-          </div>
-        )}
+              </div>
+            )}
         {/* Intent Quick Add Modal */}
         <IntentQuickAddModal
           open={showIntentModal}
